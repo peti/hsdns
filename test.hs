@@ -1,3 +1,8 @@
+-- Resolve a bunch of hostnames' A records, then resolve
+-- those A-record's PTR records and check whether they
+-- match. Do it all asynchronously. The results are printed
+-- in the order the answers come in.
+
 module Main where
 
 import Control.Monad           ( when, replicateM_ )
@@ -5,14 +10,7 @@ import Control.Concurrent      ( forkIO )
 import Control.Concurrent.MVar ( takeMVar )
 import Control.Concurrent.Chan ( Chan, newChan, writeChan, readChan )
 import System.Environment      ( getArgs )
-import Network.DNS.PollResolver
-import Network.DNS.ADNS
-import Network
-
--- Resolve a bunch of hostnames' A records, then resolve
--- those A-record's PTR records and check whether they
--- match. Do it all asynchronously. The results are printed
--- in the order the answers come in.
+import Network.DNS
 
 data CheckResult
   = OK HostName RRAddr
@@ -24,10 +22,10 @@ main :: IO ()
 main = do
   names <- getArgs
   when (null names) (print "Usage: hostname [hostname ...]")
-  query <- initResolver [ NoErrPrint, NoServerWarn ]
-  rrChannel <- newChan :: IO (Chan CheckResult)
-  mapM_ (\h -> forkIO (ptrCheck query rrChannel h)) names
-  replicateM_ (length names) (readChan rrChannel >>= print)
+  initResolver [ NoErrPrint, NoServerWarn ] $ \query -> do
+    rrChannel <- newChan :: IO (Chan CheckResult)
+    mapM_ (\h -> forkIO (ptrCheck query rrChannel h)) names
+    replicateM_ (length names) (readChan rrChannel >>= print)
 
 ptrCheck :: Resolver -> Chan CheckResult -> HostName -> IO ()
 ptrCheck query chan host = do

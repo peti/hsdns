@@ -12,47 +12,23 @@
    resolver library written in C. Its source code, among
    other things, is available at
    <http://www.gnu.org/software/adns/>. Process this module
-   with @hsc2hs@, to generate the final Haskell source code,
+   with @hsc2hs@, to generate the final Haskell source code
    which interfaces to ADNS.
 
-   You will most likely not need this module directly.
-   "PollResolver" provides a much nicer interface from the
+   You will most likely not need this module directly;
+   "Network.DNS" provides a much nicer interface from the
    Haskell world; this module contains basically just
-   marshaling code. Nevertheless, here are some code
-   examples, which show how to use the resolver
-   synchronously:
-
-   > resolve :: String -> RRType -> IO ()
-   > resolve r rt = do
-   >   st <- adnsInit [ LogPid ]
-   >   rr <- adnsSynch st r rt [ Owner ]
-   >   print rr
-
-   Another approach is this:
-
-   > resolveA :: String -> RRType -> IO ()
-   > resolveA r rt = do
-   >   st <- adnsInit [ LogPid ]
-   >   q <- adnsSubmit st r rt [ Owner ]
-   >   a <- getAns st q
-   >   print a
-   >
-   >     where getAns st q = do
-   >             rc <- adnsCheck st q
-   >             case rc of
-   >               Just a  -> return a
-   >               Nothing -> do threadDelay (10^6)
-   >                             getAns st q
+   marshaling code.
 -}
 
 module Network.DNS.ADNS where
 
+import Control.Exception ( assert, bracket )
+import Data.Endian
 import Foreign
 import Foreign.C
-import Control.Exception ( finally, assert )
 import Network           ( HostName )
 import Network.Socket    ( HostAddress )
-import Data.Endian
 
 ----- Mashal ADNS Data Types -----------------------------------------
 
@@ -61,8 +37,7 @@ import Data.Endian
 #include <poll.h>
 
 data OpaqueState
-type RawState = Ptr OpaqueState
-type State    = ForeignPtr OpaqueState
+type AdnsState = Ptr OpaqueState
 
 data OpaqueQuery
 type Query = Ptr OpaqueQuery
@@ -109,8 +84,8 @@ data QueryFlag
   | UseVC             -- ^ use a virtual circuit (TCP connection)
   | Owner             -- ^ fill in the owner field in the answer
   | QuoteOk_Query     -- ^ allow special chars in query domain
-  | QuoteOk_CName     -- ^ allow ... in CNAME we go via (default)
-  | QuoteOk_AnsHost   -- ^ allow ... in things supposed to be hostnames
+  | QuoteOk_CName     -- ^ allow special chars in CNAME we go via (default)
+  | QuoteOk_AnsHost   -- ^ allow special chars in things supposed to be hostnames
   | QuoteFail_CName   -- ^ refuse if quote-req chars in CNAME we go via
   | CName_Loose       -- ^ allow refs to CNAMEs - without, get _s_cname
   | CName_Forbid      -- ^ don't follow CNAMEs, instead give _s_cname
@@ -366,135 +341,101 @@ peekResp rt ptr off n = do
 
 ----- Provide Wrappers for ADNS functions ----------------------------
 
--- |Internel helper function to handle result passing from ADNS via
--- @Ptr (Ptr a)@, and to generate human-readable IO exceptions in case
--- of an error.
+-- |Run the given 'IO' computation with an initialized
+-- resolver. As of now, the diagnose stream is always set to
+-- @stderr@. Initialize the library with the 'NoErrPrint'
+-- flag if you don't wont to see any error output there. All
+-- resources are freed @adnsInit@ returns.
 
-wrapAdns :: (Ptr (Ptr b) -> IO CInt) -> (Ptr (Ptr b) -> IO a) -> IO a
-wrapAdns m acc  = alloca $ \resP -> do
-  poke resP nullPtr
-  rc <- m resP
-  if (rc == 0)
-     then acc resP
-     else do p <- adns_strerror rc
-             s <- peekCString p
-             fail ("ADNS: " ++ s)
-
--- |Map a list of flags ('Enum' types) into a 'CInt'
--- suitable for adns calls.
-
-mkFlags :: Enum a => [a] -> CInt
-mkFlags = toEnum . sum . map fromEnum
-
--- |Initialize the resolver. As of now, the diagnose stream
--- is always set to @stderr@. Initialize the library with
--- the 'NoErrPrint' flag if you don't wont to see any error
--- output there. All resources are freed automatically when
--- the 'State' falls out of scope.
-
-adnsInit :: [InitFlag] -> IO State
+adnsInit :: [InitFlag] -> (AdnsState -> IO a) -> IO a
 adnsInit flags =
-  wrapAdns
-    (\p -> adns_init p (mkFlags flags) nullPtr)
-    (\p -> peek p >>= newForeignPtr adnsFinalizer)
+  bracket
+    (wrapAdns (\p -> adns_init p (mkFlags flags) nullPtr) peek)
+    adns_finish
 
--- |Similar to 'adnsInit', but reads the resolver configuration from a
--- string rather than from @\/etc\/resolv.conf@. Supported are the
--- usual commands: @nameserver@, @search@, @domain@, @sortlist@, and
+-- |Similar to 'adnsInit', but reads the resolver
+-- configuration from a string rather than from
+-- @\/etc\/resolv.conf@. Supported are the usual commands:
+-- @nameserver@, @search@, @domain@, @sortlist@, and
 -- @options@.
 --
 -- Furthermore, these non-standard commands may be used:
 --
---  * @clearnameservers@: Clears the list of nameservers, so that
---    further nameserver lines start again from the beginning.
+--  * @clearnameservers@: Clears the list of nameservers.
 --
 --  * @include filename@: The specified file will be read.
+
+adnsInitCfg :: [InitFlag] -> String -> (AdnsState -> IO a) -> IO a
+adnsInitCfg flags cfg = bracket mkState adns_finish
+  where
+  mkState = withCString cfg $ \cstr ->
+              wrapAdns
+                (\p -> adns_init_strcfg p (mkFlags flags) nullPtr cstr)
+                peek
+
+-- |@adnsSynch st name rt flags@ performs a synchronous
+-- query for record @name@ of type @rt@. @st@ must be a
+-- 'State' returned by 'adnsInit'. @flags@ may be any of
+-- number of 'QueryFlag'.
 --
--- For a full description, see the comments in the @adns.h@ header
--- file.
+-- In case of an I\/O error, an 'IOException' is thrown. If
+-- the query fails for other reasons, the 'Status' code in
+-- the 'Answer' will signify that.
 
-adnsInitCfg :: [InitFlag] -> String -> IO State
-adnsInitCfg flags cfg = do
-  cstr <- newCString cfg
-  wrapAdns
-      (\p -> adns_init_strcfg p (mkFlags flags) nullPtr cstr)
-      (\p -> peek p >>= newForeignPtr adnsFinalizer)
-    `finally` free cstr
+adnsSynch :: AdnsState -> String -> RRType -> [QueryFlag] -> IO Answer
+adnsSynch st own rrt flags =
+  withCString own $ \o -> do
+    let rrt' = (toEnum . fromEnum) rrt
+    wrapAdns
+        (adns_synchronous st o rrt' (mkFlags flags))
+        (\p -> peek p >>= peek)
 
--- |@adnsSynch st name rt flags@ performs a synchronous query for
--- record @name@ of type @rt@. @st@ must be a 'State' returned by
--- 'adnsInit'. @flags@ may be any of number of 'QueryFlag'.
---
--- In case of an I\/O error, an 'IOException' is thrown. If the query
--- fails for other reasons, the 'Status' code in the 'Answer' will
--- signify that.
+-- |Submit an asynchronous query using the same parameters
+-- as 'adnsSynch'. The returned 'Query' can be tested for
+-- completion with 'adnsCheck'.
 
-adnsSynch :: State -> String -> RRType -> [QueryFlag] -> IO Answer
-adnsSynch st' own rrt flags = withForeignPtr st' $ \st -> do
-  o <- newCString own
-  let rrt' = (toEnum . fromEnum) rrt
-  wrapAdns
-      (adns_synchronous st o rrt' (mkFlags flags))
-      (\p -> peek p >>= peek)
-   `finally` free o
+adnsSubmit :: AdnsState -> String -> RRType -> [QueryFlag] -> IO Query
+adnsSubmit st own rrt flags =
+  withCString own $ \o -> do
+    let rrt' = (toEnum . fromEnum) rrt
+    wrapAdns
+        (adns_submit st o rrt' (mkFlags flags) nullPtr)
+        (peek)
 
--- |Submit an asynchronous query using the same parameters as
--- 'adnsSynch'. The returned 'Query' can be tested for completion with
--- 'adnsCheck'.
+-- |Check the status of an asynchronous query. If the query
+-- is completed, the 'Answer' will be returned. The 'Query'
+-- becomes invalid after that.
 
-adnsSubmit :: State -> String -> RRType -> [QueryFlag] -> IO Query
-adnsSubmit st' own rrt flags = withForeignPtr st' $ \st -> do
-  o <- newCString own
-  let rrt' = (toEnum . fromEnum) rrt
-  wrapAdns
-      (adns_submit st o rrt' (mkFlags flags) nullPtr)
-      (peek)
-    `finally` free o
+adnsCheck :: AdnsState -> Query -> IO (Maybe Answer)
+adnsCheck st q =
+  alloca $ \qPtr ->
+  alloca $ \aPtr -> do
+    poke qPtr q
+    poke aPtr nullPtr
+    rc <- adns_check st qPtr aPtr nullPtr
+    case rc of
+      0               -> peek aPtr >>= peek >>= return . Just
+      #{const EAGAIN} -> return Nothing
+      _               -> do p <- adns_strerror rc
+                            s <- peekCString p
+                            fail ("adnsCheck: " ++ s)
 
--- |Check the status of an asynchronous query. If the query is
--- completed, the 'Answer' will be returned. The 'Query' becomes
--- invalid after that.
-
-adnsCheck :: State -> Query -> IO (Maybe Answer)
-adnsCheck st' q =
-  withForeignPtr st' $ \st ->
-    alloca $ \qPtr ->
-      alloca $ \aPtr -> do
-        poke qPtr q
-        poke aPtr nullPtr
-        rc <- adns_check st qPtr aPtr nullPtr
-        case rc of
-          0               -> peek aPtr >>= peek >>= return . Just
-          #{const EAGAIN} -> return Nothing
-          _               -> do p <- adns_strerror rc
-                                s <- peekCString p
-                                fail ("adnsCheck: " ++ s)
-
--- |Cancel an outstanding 'Query'.
+-- |Cancel an open 'Query'.
 
 foreign import ccall unsafe "adns_cancel" adnsCancel :: Query -> IO ()
 
-type Shutdown = RawState -> IO ()
-foreign import ccall "wrapper"
-  mkShutdown :: Shutdown -> IO (FunPtr Shutdown)
+-- |Return the list of all currently open queries.
 
-{-# NOINLINE adnsFinalizer #-}
-adnsFinalizer :: FunPtr Shutdown
-adnsFinalizer = unsafePerformIO (mkShutdown adns_finish)
+adnsQueries :: AdnsState -> IO [Query]
+adnsQueries st = adns_forallqueries_begin st >> walk
+  where walk   = do q <- adns_forallqueries_next st nullPtr
+                    if (q /= nullPtr)
+                       then walk >>= return . ((:) q)
+                       else return []
 
--- |Return the list of all currently outstanding queries.
-
-adnsQueries :: State -> IO [Query]
-adnsQueries st' = withForeignPtr st' $ \st ->
-                    adns_forallqueries_begin st >> walk st
-    where
-    walk st = do q <- adns_forallqueries_next st nullPtr
-                 if (q /= nullPtr)
-                    then walk st >>= return . ((:) q)
-                    else return []
-
--- |Opaque data type, provided only so that we can define 'sizeOf' for
--- it, in order to be able to 'mallocArray' an array for @poll(2)@.
+-- |Opaque data type, provided only so that we can define
+-- 'sizeOf' for it, in order to be able to 'mallocArray' an
+-- array for @poll(2)@.
 
 data Pollfd
 
@@ -505,87 +446,72 @@ instance Storable Pollfd where
     peek _      = error "peek is not defined for ADNS.Pollfd"
 
 
--- |Original definition:
+-- |Find out which file descriptors ADNS is interested in,
+-- and when it would like to be able to time things out.
+-- This is in a form suitable for use with @poll(2)@.
 --
--- >    int adns_beforepoll(
--- >            adns_state ads,
--- >            struct pollfd *fds, int *nfds_io,
--- >            int *timeout_io,
--- >            const struct timeval *now);
---
--- Finds out which file descriptors ADNS is interested in, and when it
--- would like to be able to time things out. This is in a form
--- suitable for use with @poll(2)@.
---
--- On entry, usually @fds@ should point to at least @*nfds_io@
--- structs. ADNS will fill up to that many structs will information
--- for @poll@, and record in @*nfds_io@ how many structs it filled. If
--- it wants to listen for more structs then @*nfds_io@ will be set to
--- the number required and 'adns_beforepoll' will return 'eRANGE'.
+-- On entry, usually @fds@ should point to at least
+-- @*nfds_io@ structs. ADNS will fill up to that many
+-- structs will information for @poll@, and record in
+-- @*nfds_io@ how many structs it filled. If it wants to
+-- listen for more structs then @*nfds_io@ will be set to
+-- the number required and 'adns_beforepoll' will return
+-- 'eRANGE'.
 --
 -- You may call 'adns_beforepoll' with @fds=='nullPtr'@ and
--- @*nfds_io==0@, in which case ADNS will fill in the number of fds
--- that it might be interested in in @*nfds_io@, and always return
--- either 0 (if it is not interested in any fds) or 'eRANGE' (if it
--- is).
+-- @*nfds_io==0@, in which case ADNS will fill in the number
+-- of fds that it might be interested in in @*nfds_io@, and
+-- always return either 0 (if it is not interested in any
+-- fds) or 'eRANGE' (if it is).
 --
--- /Note/ that (unless @now@ is 0) ADNS may acquire additional fds
--- from one call to the next, so you must put adns_beforepoll in a
--- loop, rather than assuming that the second call (with the buffer
--- size requested by the first) will not return 'eRANGE'.
+-- /Note/ that (unless @now@ is 0) ADNS may acquire
+-- additional fds from one call to the next, so you must put
+-- adns_beforepoll in a loop, rather than assuming that the
+-- second call (with the buffer size requested by the first)
+-- will not return 'eRANGE'.
 --
--- ADNS only ever sets @POLLIN@, @POLLOUT@ and @POLLPRI@ in its pollfd
--- structs, and only ever looks at those bits. @POLLPRI@ is required
--- to detect TCP Urgent Data (which should not be used by a DNS
--- server) so that ADNS can know that the TCP stream is now useless.
+-- ADNS only ever sets @POLLIN@, @POLLOUT@ and @POLLPRI@ in
+-- its pollfd structs, and only ever looks at those bits.
+-- @POLLPRI@ is required to detect TCP Urgent Data (which
+-- should not be used by a DNS server) so that ADNS can know
+-- that the TCP stream is now useless.
 --
--- In any case, @*timeout_io@ should be a timeout value as for
--- @poll(2)@, which ADNS will modify downwards as required. If the
--- caller does not plan to block then @*timeout_io@ should be 0 on
--- entry, or alternatively, @timeout_io@ may be 0.
+-- In any case, @*timeout_io@ should be a timeout value as
+-- for @poll(2)@, which ADNS will modify downwards as
+-- required. If the caller does not plan to block then
+-- @*timeout_io@ should be 0 on entry, or alternatively,
+-- @timeout_io@ may be 0.
 --
--- 'adns_beforepoll' will return 0 on success, and will not fail for any
--- reason other than the fds buffer being too small (ERANGE).
+-- 'adns_beforepoll' will return 0 on success, and will not
+-- fail for any reason other than the fds buffer being too
+-- small (ERANGE).
 --
--- This call will never actually do any I\/O.  If you supply the
--- current time it will not change the fds that ADNS is using or the
--- timeouts it wants.
+-- This call will never actually do any I\/O. If you supply
+-- the current time it will not change the fds that ADNS is
+-- using or the timeouts it wants.
 --
 -- In any case this call won't block.
 
-adnsBeforePoll ::
-  State -> Ptr Pollfd -> Ptr CInt -> Ptr CInt -> Ptr Timeval
+foreign import ccall unsafe "adns_beforepoll" adnsBeforePoll ::
+  AdnsState -> Ptr Pollfd -> Ptr CInt -> Ptr CInt -> Ptr Timeval
   -> IO CInt
-adnsBeforePoll st' fds n size to =
-  withForeignPtr st' $ \st -> adns_beforepoll st fds n size to
 
--- |Original definition:
---
--- >    void adns_afterpoll(adns_state ads,
--- >            const struct pollfd *fds, int nfds,
--- >            const struct timeval *now);
---
--- Gives ADNS flow-of-control for a bit; intended for use after
--- @poll(2)@. @fds@ and @nfds@ should be the results from @poll()@.
--- @pollfd@ structs mentioning fds not belonging to adns will be
--- ignored.
+-- |Gives ADNS flow-of-control for a bit; intended for use
+-- after @poll(2)@. @fds@ and @nfds@ should be the results
+-- from @poll()@. @pollfd@ structs mentioning fds not
+-- belonging to adns will be ignored.
 
-adnsAfterPoll :: State -> Ptr Pollfd -> CInt -> Ptr Timeval -> IO ()
-adnsAfterPoll st' fds n to =
-  withForeignPtr st' $ \st -> adns_afterpoll st fds n to
+foreign import ccall unsafe "adns_afterpoll" adnsAfterPoll ::
+  AdnsState -> Ptr Pollfd -> CInt -> Ptr Timeval -> IO ()
 
--- |The system routine @poll(2)@:
---
--- >    int poll(struct pollfd *ufds,
--- >             unsigned int nfds,
--- >             int timeout);
+-- |The system routine @poll(2)@.
 
 foreign import ccall unsafe poll :: Ptr Pollfd -> CUInt -> CInt -> IO CInt
 
--- |ADNS's scheduling calls take the current time of the day as
--- parameter, to avoid making unnecessary system calls. Hence, I
--- provide a marshaled version of C's @struct timeval@, so that this
--- value can be provided.
+-- |ADNS's scheduling calls take the current time of the day
+-- as parameter, to avoid making unnecessary system calls.
+-- Hence, I provide a marshaled version of C's @struct
+-- timeval@, so that this value can be provided.
 
 data Timeval = Timeval CTime #{type suseconds_t}
 data Timezone
@@ -600,8 +526,9 @@ instance Storable Timeval where
                    us <- #{peek struct timeval, tv_usec} ptr
                    return (Timeval t us)
 
--- |Write the current time of the day as a 'Timeval'. The time is
--- returned in local time, no time zone correction takes place.
+-- |Write the current time of the day as a 'Timeval'. The
+-- time is returned in local time, no time zone correction
+-- takes place.
 
 getTimeOfDay :: Ptr Timeval -> IO ()
 getTimeOfDay p  = do
@@ -647,38 +574,31 @@ adnsErrTypeAbbrev (StatusCode x) = do
 ----- Low-level C Functions ------------------------------------------
 
 foreign import ccall unsafe adns_init ::
-  Ptr RawState -> CInt -> Ptr CFile -> IO CInt
+  Ptr AdnsState -> CInt -> Ptr CFile -> IO CInt
 
 foreign import ccall unsafe adns_init_strcfg ::
-  Ptr RawState -> CInt -> Ptr CFile -> CString-> IO CInt
+  Ptr AdnsState -> CInt -> Ptr CFile -> CString-> IO CInt
 
 foreign import ccall unsafe adns_finish ::
-  RawState -> IO ()
+  AdnsState -> IO ()
 
 foreign import ccall unsafe adns_submit ::
-  RawState -> CString -> CInt -> CInt -> Ptr a -> Ptr Query
+  AdnsState -> CString -> CInt -> CInt -> Ptr a -> Ptr Query
   -> IO CInt
 
 foreign import ccall unsafe adns_check ::
-  RawState -> Ptr Query -> Ptr (Ptr Answer) -> Ptr (Ptr a)
+  AdnsState -> Ptr Query -> Ptr (Ptr Answer) -> Ptr (Ptr a)
   -> IO CInt
 
 foreign import ccall unsafe adns_synchronous ::
-  RawState -> CString -> CInt -> CInt -> Ptr (Ptr Answer)
+  AdnsState -> CString -> CInt -> CInt -> Ptr (Ptr Answer)
   -> IO CInt
-
-foreign import ccall unsafe adns_beforepoll ::
-  RawState -> Ptr Pollfd -> Ptr CInt -> Ptr CInt -> Ptr Timeval
-  -> IO CInt
-
-foreign import ccall unsafe adns_afterpoll ::
-  RawState -> Ptr Pollfd -> CInt -> Ptr Timeval -> IO ()
 
 foreign import ccall unsafe adns_forallqueries_begin ::
-  RawState -> IO ()
+  AdnsState -> IO ()
 
 foreign import ccall unsafe adns_forallqueries_next ::
-  RawState -> Ptr (Ptr a) -> IO Query
+  AdnsState -> Ptr (Ptr a) -> IO Query
 
 foreign import ccall unsafe adns_strerror      :: CInt -> IO CString
 foreign import ccall unsafe adns_errabbrev     :: CInt -> IO CString
@@ -688,6 +608,26 @@ foreign import ccall unsafe gettimeofday ::
   Ptr Timeval -> Ptr Timezone -> IO CInt
 
 ----- Helper Functions -----------------------------------------------
+
+-- |Internel helper function to handle result passing from
+-- ADNS via @Ptr (Ptr a)@, and to generate human-readable IO
+-- exceptions in case of an error.
+
+wrapAdns :: (Ptr (Ptr b) -> IO CInt) -> (Ptr (Ptr b) -> IO a) -> IO a
+wrapAdns m acc  = alloca $ \resP -> do
+  poke resP nullPtr
+  rc <- m resP
+  if (rc == 0)
+     then acc resP
+     else do p <- adns_strerror rc
+             s <- peekCString p
+             fail ("ADNS: " ++ s)
+
+-- |Map a list of flags ('Enum' types) into a 'CInt'
+-- suitable for adns calls.
+
+mkFlags :: Enum a => [a] -> CInt
+mkFlags = toEnum . sum . map fromEnum
 
 -- |Split up an IP address in network byte-order.
 
@@ -713,7 +653,6 @@ ha2ptr n = shows b4 . ('.':) .
            shows b1 $ ".in-addr.arpa."
   where
   (b1,b2,b3,b4) = ha2tpl n
-
 
 -- ----- Configure Emacs -----
 --

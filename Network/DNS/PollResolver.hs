@@ -1,5 +1,5 @@
 {- |
-   Module      :  PollResolver
+   Module      :  Network.DNS.PollResolver
    Copyright   :  (c) 2005-02-02 by Peter Simons
    License     :  GPL2
 
@@ -8,59 +8,50 @@
    Portability :  Haskell 2-pre
 
    This module providers a @poll(2)@-based I\/O scheduler
-   for "ADNS". See the @test.hs@ program included in the
-   distribution for an example of how to use this resolver.
-   A very short example would be:
-
-   > main :: IO ()
-   > main = do
-   >   let initFlags = [ NoErrPrint, NoServerWarn ]
-   >       records   = [ ("1.0.0.127.in-addr.arpa.", PTR)
-   >                   , ("www.example.org", A)
-   >                   , ("example.com", MX)
-   >                   ]
-   >   query <- initResolver initFlags
-   >   mvs   <- mapM (\(n,t) -> query n t [Owner]) records
-   >   mapM_ (\mv -> takeMVar mv >>= print) mvs
-
--}
+   for "Network.DNS.ADNS". See the @test.hs@ program
+   included in the distribution for an example of how to use
+   this resolver.
+ -}
 
 module Network.DNS.PollResolver where
 
-import Foreign
-import Foreign.C
-import Control.Monad ( when )
 import Control.Concurrent ( forkOS )
 import Control.Concurrent.MVar
-import Data.List ( sortBy )
-import Network
-import Network.Socket
+import Control.Monad      ( when )
+import Data.List          ( sortBy )
+import Foreign
+import Foreign.C
+import Network            ( HostName )
+import Network.Socket     ( HostAddress )
 import Network.DNS.ADNS
 
 ----- User Interface -------------------------------------------------
 
--- |A 'Resolver' is an 'IO' computation, which -- given the
+-- |A 'Resolver' is an 'IO' computation which -- given the
 -- name and type of the record to query -- returns an 'MVar'
 -- that will eventually contain the 'Answer' from the Domain
 -- Name System.
 
 type Resolver = String -> RRType -> [QueryFlag] -> IO (MVar Answer)
 
--- |Initialize a 'Resolver'. The returned function can be
--- used to issue queries; like in this example:
---
--- > do query <- initResolver []
--- >    mv    <- query "1.0.0.127.in-addr.arpa." PTR [Owner]
--- >    takeMVar mv >>= print
---
--- Note that this resolver function can be shared, and
--- /should/ be shared between any number of IO threads. You
--- may use multiple resolvers, of course, but doing so
--- defeats the purpose of an asynchronous resolver.
+-- |Run the given 'IO' computation with an Initialized
+-- 'Resolver'. Note that resolver functions can be shared,
+-- and /should/ be shared between any number of 'IO'
+-- threads. You may use multiple resolvers, of course, but
+-- doing so defeats the purpose of an asynchronous resolver.
 
-initResolver :: [InitFlag] -> IO Resolver
+initResolver :: [InitFlag] -> (Resolver -> IO a) -> IO a
+initResolver flags f = do
+  when (NoAutoSys `elem` flags)
+    (fail "PollResolver needs AutoSys in init flags")
+  adnsInit flags $ \dns -> do
+    fds <- mallocForeignPtrArray initSize
+    mst <- newMVar (RState dns fds initSize [] False)
+    f (resolve mst)
+  where
+  initSize = 32
 
--- |Get the 'A' records assigned to a hostname.
+-- |Convenience function to resolve a hostname's 'A' record.
 
 resolveA :: Resolver -> HostName -> IO (Either Status [HostAddress])
 resolveA query x = do
@@ -105,21 +96,12 @@ resolveMX query x = do
 ----- Implementation -------------------------------------------------
 
 data ResolverState = RState
-  { adns     :: State                   -- opaque ADNS state
-  , pollfds  :: ForeignPtr Pollfd       -- array for poll(2)
-  , capacity :: Int                     -- size of the array
-  , queries  :: [(Query, MVar Answer)]  -- currently open queries
-  , touched  :: Bool                    -- set every time state is modified
+  { adns     :: AdnsState               -- ^opaque ADNS state
+  , pollfds  :: ForeignPtr Pollfd       -- ^array for poll(2)
+  , capacity :: Int                     -- ^size of the array
+  , queries  :: [(Query, MVar Answer)]  -- ^currently open queries
+  , touched  :: Bool                    -- ^set every time state is modified
   }
-
-initResolver flags = do
-  when (NoAutoSys `elem` flags)
-    (fail "PollResolver needs AutoSys in init flags")
-  dns <- adnsInit flags
-  fds <- mallocForeignPtrArray initSize
-  mst <- newMVar (RState dns fds initSize [] False)
-  return (resolve mst)
-    where initSize = 32
 
 resolve :: MVar ResolverState -> Resolver
 resolve mst r rt qfs = modifyMVar mst $ \st -> do

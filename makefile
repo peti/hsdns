@@ -4,7 +4,7 @@ PACKAGE     := hsdns
 RELEASE     := `date --iso-8601`
 DISTARCHIVE := $(PACKAGE)-$(RELEASE).tar.gz
 DISTFILES   := Data/Endian.hs Network/DNS/ADNS.hsc Network/DNS/PollResolver.hs \
-               test.hs README hsdns.cabal
+               Network/DNS.hs test.hs README hsdns.cabal
 GHCURL      := http://haskell.org/ghc/docs/latest/html/libraries
 GHCPREFIX   := /usr/local/ghc-current/share/ghc-6.3/html/libraries
 GHCFLAGS    := -Wall -O \
