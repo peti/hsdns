@@ -1,11 +1,11 @@
 # build haddock documentation, and release archive
 
-PACKAGE     := hsdns
-RELEASE     := `date --iso-8601`
-DISTARCHIVE := $(PACKAGE)-$(RELEASE).tar.gz
-GHCURL      := http://haskell.org/ghc/docs/latest/html/libraries
-GHCPREFIX   := /usr/local/ghc-current/share/ghc-6.3/html/libraries
-CABAL       := runghc /usr/local/src/cabal-current/Setup.lhs
+PACKAGE		:= hsdns
+RELEASE		:= `date --iso-8601`
+DISTNAME	:= $(PACKAGE)-$(RELEASE)
+GHCURL		:= http://haskell.org/ghc/docs/latest/html/libraries
+GHCPREFIX	:= /usr/local/ghc-current/share/ghc-6.3/html/libraries
+CABAL		:= runghc /usr/local/src/cabal-current/Setup.lhs
 
 .PHONY: all clean distclean dist redate init-src
 
@@ -21,17 +21,7 @@ test:		test.hs
 	ghc -threaded -O -Wall --make test.hs -o $@ -ladns
 
 dist::		clean index.html
-
-#dist::	docs/index.html index.html $(DISTFILES)
-#	@rm -rf $(DISTARCHIVE) $(PACKAGE)-$(RELEASE)
-#	@mkdir $(PACKAGE)-$(RELEASE)
-#	@for n in $(DISTFILES); do \
-#	  install -D -m 644 $$n $(PACKAGE)-$(RELEASE)/$$n; \
-#	done
-#	@cp -rp docs $(PACKAGE)-$(RELEASE)/
-#	@echo Created $(DISTARCHIVE).
-#	@tar cfvz $(DISTARCHIVE) $(PACKAGE)-$(RELEASE)
-#	@rm -rf $(PACKAGE)-$(RELEASE)
+	@darcs dist --dist-name $(DISTNAME)
 
 index.html:	README
 	@lhs2html $<
@@ -43,7 +33,7 @@ clean::
 	@rm -f test README.html `find . \( -name *.o -o -name *.hi \)`
 
 distclean:	clean
-	@rm -rf docs $(DISTARCHIVE) $(PACKAGE)-$(RELEASE)
+	@rm -rf docs $(DISTNAME).tar.gz
 	@rm -f index.html System/Posix/GetTimeOfDay.hs
 	@rm -f System/Posix/Poll.hs Network/DNS/ADNS.hs
 	@rm -f .setup-config .installed-pkg-config
