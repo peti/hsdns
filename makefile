@@ -47,7 +47,7 @@ distclean clean::
 	rm -rf docs $(DISTARCHIVE) $(PACKAGE)-$(RELEASE)
 	rm -f `find . \( -name *.o -o -name *.hi \)`
 	rm -f test Network/DNS/ADNS.hs Network/DNS/ADNS_stub.?
-	rm -f README.html $(PACKAGE)-*.tar.gz
+	rm -f README.html index.html $(PACKAGE)-*.tar.gz
 
 redate::
 	redate $(DISTFILES)
