@@ -1,5 +1,5 @@
-name:		hsdns
-version:	0.0-2005-02-10
+name:		PACKAGE
+version:	VERSION
 license:	GPL
 maintainer:	simons@cryp.to
 exposed:	True
@@ -19,7 +19,6 @@ import-dirs:	IMPORT_DIR
 library-dirs:	LIB_DIR
 hs-libraries:   "HShsdns"
 extra-libs:	"adns"
-include-dirs: 	INCLUDE_DIR
 includes:	"<adns.h>", "<sys/poll.h>", "<sys/time.h>", "<errno.h>"
 depends:	base, network
 
