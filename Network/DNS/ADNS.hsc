@@ -295,7 +295,7 @@ data Response
 instance Storable Answer where
   sizeOf _    = #{size adns_answer}
   alignment _ = alignment (undefined :: CInt)
-  poke _ _    = error "poke is not defined for Network.DNS.ADNS.Answer"
+  poke _ _    = fail "poke is not defined for Network.DNS.ADNS.Answer"
   peek ptr    = do
     sc <- #{peek adns_answer, status} ptr
     cn <- #{peek adns_answer, cname} ptr >>= maybePeek peekCString
