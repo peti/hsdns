@@ -21,8 +21,6 @@ module Network.DNS
   , HostName
     -- Network.Socket
   , HostAddress
-  , ha2tpl
-  , ha2ptr
     -- ADNS
   , InitFlag(..)
   , QueryFlag(..)

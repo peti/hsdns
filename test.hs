@@ -11,6 +11,7 @@ import Control.Concurrent.MVar ( takeMVar )
 import Control.Concurrent.Chan ( Chan, newChan, writeChan, readChan )
 import System.Environment      ( getArgs )
 import Network.DNS
+import Network.IP.Address
 
 data CheckResult
   = OK HostName RRAddr

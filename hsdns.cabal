@@ -11,10 +11,10 @@ Includes:        "<adns.h>", "<sys/poll.h>", "<sys/time.h>",
                  "<errno.h>"
 Extensions:      ForeignFunctionInterface
 Exposed-Modules:
+    Data.Endian,
     Network.DNS,
     Network.DNS.ADNS,
     Network.DNS.PollResolver,
-    System.Posix.Poll,
+    Network.IP.Address,
     System.Posix.GetTimeOfDay,
-    Data.Endian,
-    Network.IP.Address
+    System.Posix.Poll
