@@ -7,10 +7,10 @@
    Stability   :  provisional
    Portability :  Haskell 2-pre
 
-   This module providers a @poll(2)@-based I\/O scheduler
-   for "Network.DNS.ADNS". See the @test.hs@ program
-   included in the distribution for an example of how to use
-   this resolver.
+   This module providers a 'poll'-based I\/O scheduler for
+   "Network.DNS.ADNS". See the @test.hs@ program included in
+   the distribution for an example of how to use this
+   resolver.
  -}
 
 module Network.DNS.PollResolver where
@@ -22,8 +22,10 @@ import Data.List          ( sortBy )
 import Foreign
 import Foreign.C
 import Network            ( HostName )
-import Network.Socket     ( HostAddress )
+import Network.IP.Address
 import Network.DNS.ADNS
+import System.Posix.Poll
+import System.Posix.GetTimeOfDay
 
 ----- User Interface -------------------------------------------------
 

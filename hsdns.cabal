@@ -7,10 +7,14 @@ Homepage:        http://cryp.to/hsdns/
 Description:     Asynchronous DNS Resolver
 Build-Depends:   base, network
 Extra-Libs:      adns
-Includes:        "<adns.h>", "<sys/poll.h>"
+Includes:        "<adns.h>", "<sys/poll.h>", "<sys/time.h>",
+                 "<errno.h>"
 Extensions:      ForeignFunctionInterface
 Exposed-Modules:
     Network.DNS,
     Network.DNS.ADNS,
     Network.DNS.PollResolver,
-    Data.Endian
+    System.Posix.Poll,
+    System.Posix.GetTimeOfDay,
+    Data.Endian,
+    Network.IP.Address

@@ -21,6 +21,8 @@ module Network.DNS
   , HostName
     -- Network.Socket
   , HostAddress
+  , ha2tpl
+  , ha2ptr
     -- ADNS
   , InitFlag(..)
   , QueryFlag(..)
@@ -64,12 +66,10 @@ module Network.DNS
   , adnsStrerror
   , adnsErrAbbrev
   , adnsErrTypeAbbrev
-  , ha2tpl
-  , ha2ptr
   )
   where
 
 import Network           ( HostName )
-import Network.Socket    ( HostAddress )
 import Network.DNS.ADNS
 import Network.DNS.PollResolver
+import Network.IP.Address

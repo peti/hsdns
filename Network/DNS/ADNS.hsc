@@ -24,17 +24,17 @@
 module Network.DNS.ADNS where
 
 import Control.Exception ( assert, bracket )
-import Data.Endian
 import Foreign
 import Foreign.C
-import Network           ( HostName )
-import Network.Socket    ( HostAddress )
+import Network            ( HostName )
+import Network.IP.Address
+import System.Posix.Poll
+import System.Posix.GetTimeOfDay
 
 ----- Mashal ADNS Data Types -----------------------------------------
 
 #include <adns.h>
 #include <errno.h>
-#include <poll.h>
 
 data OpaqueState
 type AdnsState = Ptr OpaqueState
@@ -433,19 +433,6 @@ adnsQueries st = adns_forallqueries_begin st >> walk
                        then walk >>= return . ((:) q)
                        else return []
 
--- |Opaque data type, provided only so that we can define
--- 'sizeOf' for it, in order to be able to 'mallocArray' an
--- array for @poll(2)@.
-
-data Pollfd
-
-instance Storable Pollfd where
-    sizeOf _    = #{size struct pollfd}
-    alignment _ = alignment (undefined :: CInt)
-    poke _ _    = error "poke is not defined for ADNS.Pollfd"
-    peek _      = error "peek is not defined for ADNS.Pollfd"
-
-
 -- |Find out which file descriptors ADNS is interested in,
 -- and when it would like to be able to time things out.
 -- This is in a form suitable for use with @poll(2)@.
@@ -503,39 +490,6 @@ foreign import ccall unsafe "adns_beforepoll" adnsBeforePoll ::
 
 foreign import ccall unsafe "adns_afterpoll" adnsAfterPoll ::
   AdnsState -> Ptr Pollfd -> CInt -> Ptr Timeval -> IO ()
-
--- |The system routine @poll(2)@.
-
-foreign import ccall unsafe poll :: Ptr Pollfd -> CUInt -> CInt -> IO CInt
-
--- |ADNS's scheduling calls take the current time of the day
--- as parameter, to avoid making unnecessary system calls.
--- Hence, I provide a marshaled version of C's @struct
--- timeval@, so that this value can be provided.
-
-data Timeval = Timeval CTime #{type suseconds_t}
-data Timezone
-
-instance Storable Timeval where
-  sizeOf _    = #{size struct timeval}
-  alignment _ = alignment (undefined :: CTime)
-  poke ptr (Timeval t us)
-              = do #{poke struct timeval, tv_sec} ptr t
-                   #{poke struct timeval, tv_usec} ptr us
-  peek ptr    = do t <- #{peek struct timeval, tv_sec} ptr
-                   us <- #{peek struct timeval, tv_usec} ptr
-                   return (Timeval t us)
-
--- |Write the current time of the day as a 'Timeval'. The
--- time is returned in local time, no time zone correction
--- takes place.
-
-getTimeOfDay :: Ptr Timeval -> IO ()
-getTimeOfDay p  = do
-  rc <- gettimeofday p nullPtr
-  case rc of
-    0 -> return ()
-    _ -> throwErrno "ADNS.getTimeOfDay"
 
 -- |Map a 'Status' code to a human-readable error
 -- description. For example:
@@ -604,9 +558,6 @@ foreign import ccall unsafe adns_strerror      :: CInt -> IO CString
 foreign import ccall unsafe adns_errabbrev     :: CInt -> IO CString
 foreign import ccall unsafe adns_errtypeabbrev :: CInt -> IO CString
 
-foreign import ccall unsafe gettimeofday ::
-  Ptr Timeval -> Ptr Timezone -> IO CInt
-
 ----- Helper Functions -----------------------------------------------
 
 -- |Internel helper function to handle result passing from
@@ -629,30 +580,6 @@ wrapAdns m acc  = alloca $ \resP -> do
 mkFlags :: Enum a => [a] -> CInt
 mkFlags = toEnum . sum . map fromEnum
 
--- |Split up an IP address in network byte-order.
-
-ha2tpl :: HostAddress -> (Int, Int, Int, Int)
-ha2tpl n =
-  let (b1,n1) = (n  .&. 255, n  `shiftR` 8)
-      (b2,n2) = (n1 .&. 255, n1 `shiftR` 8)
-      (b3,n3) = (n2 .&. 255, n2 `shiftR` 8)
-      b4      = n3 .&. 255
-  in
-  case ourEndian of
-    BigEndian    -> (fromEnum b4, fromEnum b3, fromEnum b2, fromEnum b1)
-    LittleEndian -> (fromEnum b1, fromEnum b2, fromEnum b3, fromEnum b4)
-    PDPEndian    -> (fromEnum b4, fromEnum b3, fromEnum b1, fromEnum b2)
-
--- |Turn a 32-bit IP address into a string suitable for PTR
--- lookups.
-
-ha2ptr :: HostAddress -> String
-ha2ptr n = shows b4 . ('.':) .
-           shows b3 . ('.':) .
-           shows b2 . ('.':) .
-           shows b1 $ ".in-addr.arpa."
-  where
-  (b1,b2,b3,b4) = ha2tpl n
 
 -- ----- Configure Emacs -----
 --
