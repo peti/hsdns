@@ -1,7 +1,7 @@
 {-# OPTIONS -fffi -fglasgow-exts #-}
 {- |
    Module      :  ADNS
-   Copyright   :  (c) 2004-10-21 by Peter Simons
+   Copyright   :  (c) 2005-01-04 by Peter Simons
    License     :  GPL2
 
    Maintainer  :  simons@cryp.to
@@ -512,7 +512,7 @@ adnsCheck st' q =
 
 -- |Cancel an outstanding 'Query'.
 
-foreign import ccall safe "adns_cancel" adnsCancel :: Query -> IO ()
+foreign import ccall unsafe "adns_cancel" adnsCancel :: Query -> IO ()
 
 type Shutdown = RawState -> IO ()
 foreign import ccall "wrapper"
@@ -620,7 +620,7 @@ adnsAfterPoll st' fds n to =
 -- >             unsigned int nfds,
 -- >             int timeout);
 
-foreign import ccall safe poll :: Ptr Pollfd -> CUInt -> CInt -> IO CInt
+foreign import ccall unsafe poll :: Ptr Pollfd -> CUInt -> CInt -> IO CInt
 
 -- |ADNS's scheduling calls take the current time of the day as
 -- parameter, to avoid making unnecessary system calls. Hence, I
@@ -686,45 +686,45 @@ adnsErrTypeAbbrev (StatusCode x) = do
 
 ----- Low-level C Functions ------------------------------------------
 
-foreign import ccall safe adns_init ::
+foreign import ccall unsafe adns_init ::
   Ptr RawState -> CInt -> Ptr CFile -> IO CInt
 
-foreign import ccall safe adns_init_strcfg ::
+foreign import ccall unsafe adns_init_strcfg ::
   Ptr RawState -> CInt -> Ptr CFile -> CString-> IO CInt
 
-foreign import ccall safe adns_finish ::
+foreign import ccall unsafe adns_finish ::
   RawState -> IO ()
 
-foreign import ccall safe adns_submit ::
+foreign import ccall unsafe adns_submit ::
   RawState -> CString -> CInt -> CInt -> Ptr a -> Ptr Query
   -> IO CInt
 
-foreign import ccall safe adns_check ::
+foreign import ccall unsafe adns_check ::
   RawState -> Ptr Query -> Ptr (Ptr Answer) -> Ptr (Ptr a)
   -> IO CInt
 
-foreign import ccall safe adns_synchronous ::
+foreign import ccall unsafe adns_synchronous ::
   RawState -> CString -> CInt -> CInt -> Ptr (Ptr Answer)
   -> IO CInt
 
-foreign import ccall safe adns_beforepoll ::
+foreign import ccall unsafe adns_beforepoll ::
   RawState -> Ptr Pollfd -> Ptr CInt -> Ptr CInt -> Ptr Timeval
   -> IO CInt
 
-foreign import ccall safe adns_afterpoll ::
+foreign import ccall unsafe adns_afterpoll ::
   RawState -> Ptr Pollfd -> CInt -> Ptr Timeval -> IO ()
 
-foreign import ccall safe adns_forallqueries_begin ::
+foreign import ccall unsafe adns_forallqueries_begin ::
   RawState -> IO ()
 
-foreign import ccall safe adns_forallqueries_next ::
+foreign import ccall unsafe adns_forallqueries_next ::
   RawState -> Ptr (Ptr a) -> IO Query
 
-foreign import ccall safe adns_strerror      :: CInt -> IO CString
-foreign import ccall safe adns_errabbrev     :: CInt -> IO CString
-foreign import ccall safe adns_errtypeabbrev :: CInt -> IO CString
+foreign import ccall unsafe adns_strerror      :: CInt -> IO CString
+foreign import ccall unsafe adns_errabbrev     :: CInt -> IO CString
+foreign import ccall unsafe adns_errtypeabbrev :: CInt -> IO CString
 
-foreign import ccall safe gettimeofday ::
+foreign import ccall unsafe gettimeofday ::
   Ptr Timeval -> Ptr Timezone -> IO CInt
 
 ----- Helper Functions -----------------------------------------------
