@@ -1,6 +1,6 @@
 {-# OPTIONS -fffi -fglasgow-exts #-}
 {- |
-   Module      :  ADNS
+   Module      :  Network.DNS.ADNS
    Copyright   :  (c) 2005-01-04 by Peter Simons
    License     :  GPL2
 
@@ -45,54 +45,14 @@
    >                             getAns st q
 -}
 
-module ADNS
-    ( -- * Initialize the resolver
-      State
-    , InitFlag(..)
-    , adnsInit
-    , adnsInitCfg
-      -- * Query the resolver
-    , Query
-    , QueryFlag(..)
-    , Answer(..), Response(..)
-    , RRHostAddr(..), HostName
-    , RRType(..)
-    , RRAddr(..), HostAddress
-    , adnsSynch
-    , adnsSubmit
-    , adnsCheck
-    , adnsCancel
-    , adnsQueries
-    , adnsErrAbbrev
-    , adnsErrTypeAbbrev
-    , adnsStrerror
-      -- * Status Codes
-    , Status(..)
-    , sOK, sNOMEMORY, sUNKNOWNRRTYPE, sSYSTEMFAIL, sMAX_LOCALFAIL
-    , sTIMEOUT, sALLSERVFAIL, sNORECURSE, sINVALIDRESPONSE
-    , sUNKNOWNFORMAT, sMAX_REMOTEFAIL, sRCODESERVFAIL, sRCODEFORMATERROR
-    , sRCODENOTIMPLEMENTED, sRCODEREFUSED, sRCODEUNKNOWN, sMAX_TEMPFAIL
-    , sINCONSISTENT, sPROHIBITEDCNAME, sANSWERDOMAININVALID
-    , sANSWERDOMAINTOOLONG, sINVALIDDATA, sMAX_MISCONFIG, sQUERYDOMAINWRONG
-    , sQUERYDOMAININVALID, sQUERYDOMAINTOOLONG, sMAX_MISQUERY, sNXDOMAIN
-    , sNODATA, sMAX_PERMFAIL
-      -- * Scheduling with @poll(2)@
-    , Timeval(..)
-    , Pollfd
-    , getTimeOfDay
-    , adnsBeforePoll
-    , adnsAfterPoll
-    , poll
-      -- * Helper Functions
-    , Endian(..), ourEndian, ha2tpl, ha2ptr
-    )
-    where
+module Network.DNS.ADNS where
 
 import Foreign
 import Foreign.C
 import Control.Exception ( finally, assert )
 import Network           ( HostName )
 import Network.Socket    ( HostAddress )
+import Data.Endian
 
 ----- Mashal ADNS Data Types -----------------------------------------
 
@@ -728,34 +688,6 @@ foreign import ccall unsafe gettimeofday ::
   Ptr Timeval -> Ptr Timezone -> IO CInt
 
 ----- Helper Functions -----------------------------------------------
-
--- |Definitions for byte order according to significance of
--- bytes, from low addresses to high addresses.
-
-data Endian
-  = LittleEndian                -- ^ byte order: @1234@
-  | BigEndian                   -- ^ byte order: @4321@
-  | PDPEndian                   -- ^ byte order: @3412@
-  deriving (Show, Eq)
-
--- |The endian of this machine, determined at run-time.
--- Required when converting between network and host
--- byte-order.
-
-{-# NOINLINE ourEndian #-}
-ourEndian :: Endian
-ourEndian =
-  unsafePerformIO $
-    allocaArray (sizeOf (undefined :: Word32)) $ \p -> do
-      let val = 0x01020304 :: Word32
-      poke p val
-      let p' = castPtr p :: Ptr Word8
-      val' <- peekArray 4 p'
-      case val' of
-        (0x01:0x02:0x03:0x04:[]) -> return BigEndian
-        (0x04:0x03:0x02:0x01:[]) -> return LittleEndian
-        (0x02:0x01:0x03:0x04:[]) -> return PDPEndian
-        _                        -> error "unknown endian"
 
 -- |Split up an IP address in network byte-order.
 

@@ -1,16 +1,16 @@
--- .monotonerc for HnDNS
+-- .monotonerc for HsDNS
 
 function ignore_file(name)
-  if (name == "ADNS.hs") then return true end
+  if (name == "Network/DNS/ADNS.hs") then return true end
   if (name == "index.html") then return true end
   if (name == "test") then return true end
-  if (string.find(name, "^docs/")) then return true end
-  if (string.find(name, "^hsdns%-.*%.tar%.gz")) then return true end
   if (string.find(name, "%.hi$")) then return true end
   if (string.find(name, "%.o$")) then return true end
-  if (string.find(name, "_stub.h$")) then return true end
-  if (string.find(name, "_stub.c$")) then return true end
   if (string.find(name, "^_darcs/")) then return true end
+  if (string.find(name, "^docs/")) then return true end
+  if (string.find(name, "^hsdns%-.*%.tar%.gz")) then return true end
+  if (string.find(name, "_stub.c$")) then return true end
+  if (string.find(name, "_stub.h$")) then return true end
 
   return false
 end

@@ -5,7 +5,9 @@ import Control.Concurrent      ( forkIO )
 import Control.Concurrent.MVar ( takeMVar )
 import Control.Concurrent.Chan ( Chan, newChan, writeChan, readChan )
 import System.Environment      ( getArgs )
-import PollResolver
+import Network.DNS.PollResolver
+import Network.DNS.ADNS
+import Network
 
 -- Resolve a bunch of hostnames' A records, then resolve
 -- those A-record's PTR records and check whether they

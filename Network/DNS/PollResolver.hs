@@ -25,32 +25,7 @@
 
 -}
 
-module PollResolver
-  ( -- * An asynchronous DNS Resolver
-    Resolver, initResolver
-  , resolveA, resolvePTR, resolveMX
-    -- * Re-exports from "ADNS"
-  , InitFlag(..)
-  , QueryFlag(..)
-  , Answer(..), Response(..)
-  , RRHostAddr(..), HostName
-  , RRType(..)
-  , RRAddr(..), HostAddress
-  , adnsErrAbbrev
-  , adnsErrTypeAbbrev
-  , adnsStrerror
-  , Status(..)
-  , sOK, sNOMEMORY, sUNKNOWNRRTYPE, sSYSTEMFAIL, sMAX_LOCALFAIL
-  , sTIMEOUT, sALLSERVFAIL, sNORECURSE, sINVALIDRESPONSE
-  , sUNKNOWNFORMAT, sMAX_REMOTEFAIL, sRCODESERVFAIL, sRCODEFORMATERROR
-  , sRCODENOTIMPLEMENTED, sRCODEREFUSED, sRCODEUNKNOWN, sMAX_TEMPFAIL
-  , sINCONSISTENT, sPROHIBITEDCNAME, sANSWERDOMAININVALID
-  , sANSWERDOMAINTOOLONG, sINVALIDDATA, sMAX_MISCONFIG, sQUERYDOMAINWRONG
-  , sQUERYDOMAININVALID, sQUERYDOMAINTOOLONG, sMAX_MISQUERY, sNXDOMAIN
-  , sNODATA, sMAX_PERMFAIL
-  , Endian(..), ourEndian, ha2tpl, ha2ptr
-  )
-  where
+module Network.DNS.PollResolver where
 
 import Foreign
 import Foreign.C
@@ -58,7 +33,9 @@ import Control.Monad ( when )
 import Control.Concurrent ( forkOS )
 import Control.Concurrent.MVar
 import Data.List ( sortBy )
-import ADNS
+import Network
+import Network.Socket
+import Network.DNS.ADNS
 
 ----- User Interface -------------------------------------------------
 

@@ -3,7 +3,8 @@
 PACKAGE     := hsdns
 RELEASE     := `date --iso-8601`
 DISTARCHIVE := $(PACKAGE)-$(RELEASE).tar.gz
-DISTFILES   := ADNS.hsc PollResolver.hs test.hs README
+DISTFILES   := Data/Endian.hs Network/DNS/ADNS.hsc Network/DNS/PollResolver.hs \
+               test.hs README
 GHCURL      := http://haskell.org/ghc/docs/latest/html/libraries
 GHCPREFIX   := /usr/local/ghc-current/share/ghc-6.3/html/libraries
 GHCFLAGS    := -Wall -O \
@@ -21,11 +22,10 @@ dist::	docs/index.html index.html $(DISTFILES)
 	@tar cfvz $(DISTARCHIVE) $(PACKAGE)-$(RELEASE)
 	@rm -rf $(PACKAGE)-$(RELEASE)
 
-ADNS.hs:	ADNS.hsc
-	hsc2hs $<
+%.hs:	%.hsc
+	hsc2hs -o $@ $<
 
-
-test:		ADNS.hs PollResolver.hs test.hs
+test:		Network/DNS/ADNS.hs Network/DNS/PollResolver.hs test.hs
 	ghc -threaded $(GHCFLAGS) --make test.hs -o $@ -ladns
 
 docs/index.html: ADNS.hs $(DISTFILES)
