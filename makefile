@@ -40,11 +40,13 @@ index.html:	README
 
 clean::
 	@rm -rf dist
-	@rm -f `find . \( -name *.o -o -name *.hi \)`
+	@rm -f test README.html `find . \( -name *.o -o -name *.hi \)`
 
 distclean:	clean
 	@rm -rf docs $(DISTARCHIVE) $(PACKAGE)-$(RELEASE)
-	@rm -f test README.html index.html
+	@rm -f index.html System/Posix/GetTimeOfDay.hs
+	@rm -f System/Posix/Poll.hs Network/DNS/ADNS.hs
+	@rm -f .setup-config .installed-pkg-config
 
 redate::
 	@redate README *.hs* */*.hs* */*/*.hs*
