@@ -1,0 +1,8 @@
+An asynchronous DNS resolver for Haskell.
+
+This package provides bindings to the GNU adns library
+<http://www.gnu.org/software/adns/> as well as an
+appropriate high-level interface from the Haskell world. Not
+all options are supported as of now, but you can do A, MX,
+NS, and PTR lookups. The code has been tested with GNU adns
+versions 1.0 and 1.1.
