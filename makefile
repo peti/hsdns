@@ -17,7 +17,7 @@ all::	docs/index.html
 dist::	docs/index.html index.html $(DISTFILES)
 	@rm -rf $(DISTARCHIVE) $(PACKAGE)-$(RELEASE)
 	@mkdir $(PACKAGE)-$(RELEASE)
-	for n in $(DISTFILES); do \
+	@for n in $(DISTFILES); do \
 	  install -D -m 644 $$n $(PACKAGE)-$(RELEASE)/$$n; \
 	done
 	@cp -rp docs $(PACKAGE)-$(RELEASE)/
