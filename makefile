@@ -41,7 +41,7 @@ distclean:	clean
 	@rm -f .setup-config .installed-pkg-config
 
 redate::
-	@redate README *.hs* */*.hs* */*/*.hs*
+	@redate README $(PACKAGE).cabal
 
 init-src::
 	@rm -f MT/monotonerc
