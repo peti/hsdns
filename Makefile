@@ -27,16 +27,5 @@ SRC_HADDOCK_OPTS += -t "Asynchronous DNS Resolver ($(PACKAGE) package)"
 
 # ---------------------------------------------------------------
 
-dist::
-	@darcs dist --dist-name $(PACKAGE)-$(RELEASEDAY)
-
-redate::
-	@redate Makefile $(PACKAGE).cabal package.conf.in
-
-init-src::
-	@rm -f MT/monotonerc
-	@ln -s ../.monotonerc MT/monotonerc
-
-# ---------------------------------------------------------------
-
+-include $(TOP)/mk/crypto.mk
 include $(TOP)/mk/target.mk
