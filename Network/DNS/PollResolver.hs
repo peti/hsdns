@@ -30,7 +30,7 @@ import Network.DNS.ADNS
 import System.Posix.Poll
 import System.Posix.GetTimeOfDay
 
------ User Interface -------------------------------------------------
+-- * Resolver API
 
 -- |A 'Resolver' is an 'IO' computation which -- given the
 -- name and type of the record to query -- returns an 'MVar'
@@ -47,20 +47,18 @@ type Resolver = String -> RRType -> [QueryFlag] -> IO (MVar Answer)
 
 initResolver :: [InitFlag] -> (Resolver -> IO a) -> IO a
 initResolver flags f = do
-  when (NoAutoSys `elem` flags)
-    (fail "PollResolver needs AutoSys in init flags")
   adnsInit flags $ \dns -> do
     fds <- mallocForeignPtrArray initSize
-    mst <- newMVar (RState dns fds initSize [] False)
+    mst <- newMVar (RState dns fds initSize [])
     f (resolve mst)
   where
   initSize = 32
 
--- |Convenience function to resolve a hostname's 'A' record.
+-- |Resolve a hostname's 'A' records.
 
 resolveA :: Resolver -> HostName -> IO (Either Status [HostAddress])
-resolveA query x = do
-  Answer rc _ _ _ rs  <- query x A [] >>= takeMVar
+resolveA resolver x = do
+  Answer rc _ _ _ rs  <- resolver x A [] >>= takeMVar
   if rc /= sOK
      then return (Left rc)
      else return (Right [ addr | RRA (RRAddr addr) <- rs  ])
@@ -72,8 +70,8 @@ resolveA query x = do
 -- will return 'sINCONSISTENT'.
 
 resolvePTR :: Resolver -> HostAddress -> IO (Either Status [HostName])
-resolvePTR query x = do
-  Answer rc _ _ _ rs  <- query (ha2ptr x) PTR [] >>= takeMVar
+resolvePTR resolver x = do
+  Answer rc _ _ _ rs  <- resolver (ha2ptr x) PTR [] >>= takeMVar
   if rc /= sOK
      then return (Left rc)
      else return (Right [ addr | RRPTR addr <- rs  ])
@@ -85,13 +83,13 @@ resolvePTR query x = do
 -- determined by the priority in the 'RRMX' response.
 
 resolveMX :: Resolver -> HostName -> IO (Either Status [(HostName, HostAddress)])
-resolveMX query x = do
-  Answer rc _ _ _ rs  <- query x MX [] >>= takeMVar
+resolveMX resolver x = do
+  Answer rc _ _ _ rs  <- resolver x MX [] >>= takeMVar
   if rc /= sOK
      then return (Left rc)
      else do
        let cmp (RRMX p1 _) (RRMX p2 _) = compare p1 p2
-           cmp _ _= error (showString "unexpected record in MX lookup: " (show rs))
+           cmp _ _= error $ showString "unexpected record in MX lookup: " (show rs)
            rs' = sortBy cmp rs
            as   = [ (hn,a) | RRMX _ (RRHostAddr hn stat has) <- rs'
                            , stat == sOK && not (null has)
@@ -120,16 +118,23 @@ query f dns x = fmap toMaybe (f dns x)
     | otherwise        = Nothing
   toMaybe (Right r)    = Just r
 
+-- * Implementation
 
------ Implementation -------------------------------------------------
+-- |The internal state of the resolver is stored in an
+-- 'MVar' so that it is shared (and synchronized) between
+-- any number of concurrent 'IO' threads.
 
 data ResolverState = RState
   { adns     :: AdnsState               -- ^opaque ADNS state
   , pollfds  :: ForeignPtr Pollfd       -- ^array for poll(2)
   , capacity :: Int                     -- ^size of the array
   , queries  :: [(Query, MVar Answer)]  -- ^currently open queries
-  , touched  :: Bool                    -- ^set every time state is modified
   }
+
+-- |Submit a DNS query to the resolver and check whether we
+-- have a running 'resolveLoop' thread already. If we don't,
+-- start one with 'forkIO'. Make sure you link the threaded
+-- RTS so that the main loop will not block other threads.
 
 resolve :: MVar ResolverState -> Resolver
 resolve mst r rt qfs = modifyMVar mst $ \st -> do
@@ -137,19 +142,20 @@ resolve mst r rt qfs = modifyMVar mst $ \st -> do
   q <- adnsSubmit (adns st) r rt qfs
   when (null (queries st))
     (forkIO (resolveLoop mst) >> return ())
-  let st' = st { queries = (q,res):(queries st)
-               , touched = True
-               }
+  let st' = st { queries = (q,res):(queries st) }
   return (st', res)
+
+-- |Loop until all open queries have been resolved. Uses
+-- 'poll' internally to avoid busy-polling the ADNS sockets.
 
 resolveLoop :: MVar ResolverState -> IO ()
 resolveLoop mst = do
-  empty <- modifyMVar mst $ \(RState dns fds cap qs _) -> do
+  empty <- modifyMVar mst $ \(RState dns fds cap qs) -> do
     res' <- mapM (checkQuery dns) qs
     case [ x | Just x <- res' ] of
       []  -> do adnsQueries dns >>= mapM_ adnsCancel
-                return ((RState dns fds cap [] True), True)
-      res -> return ((RState dns fds cap res True), False)
+                return ((RState dns fds cap []), True)
+      res -> return ((RState dns fds cap res), False)
   when (not empty) (waitForIO >> resolveLoop mst)
 
   where
@@ -175,10 +181,9 @@ resolveLoop mst = do
               rc <- adnsBeforePoll (adns st) fds nfds to now
               n  <- peek nfds
               tv <- peek to
-              let st' = st { touched = False }
-              if rc == 0 then return (st', (Right (n,tv))) else
+              if rc == 0 then return (st, (Right (n,tv))) else
                 if (Errno rc) == eRANGE then return (st, (Left n)) else
-                  fail ("ADNS: beforepoll returned unknown value " ++ show rc)
+                  fail ("adnsBeforePoll returned unknown value " ++ show rc)
     case b4 of
       Left  n -> allocFds (fromEnum n) >> beforePoll
       Right x -> return x
@@ -187,15 +192,14 @@ resolveLoop mst = do
     fds' <- withMVar mst (return . pollfds)
     rc <- withForeignPtr fds' $ \fds ->
             poll fds (toEnum (fromEnum nfds)) to
-    when (rc < 0) (throwErrno "poll(2)")
+    when (rc < 0) (throwErrno "PollResolver.doPoll failed")
 
   afterPoll nfds =
     withMVar mst $ \st ->
-      when (not (touched st))
-        (alloca $ \now ->
-          withForeignPtr (pollfds st) $ \fds -> do
-            getTimeOfDay now
-            adnsAfterPoll (adns st) fds nfds now)
+      alloca $ \now ->
+        withForeignPtr (pollfds st) $ \fds -> do
+          getTimeOfDay now
+          adnsAfterPoll (adns st) fds nfds now
 
   allocFds n = modifyMVar_ mst $ \st ->
     if n <= capacity st then return st else do

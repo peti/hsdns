@@ -11,14 +11,12 @@
    This module provides bindings to GNU ADNS, a domain name
    resolver library written in C. Its source code, among
    other things, is available at
-   <http://www.gnu.org/software/adns/>. Process this module
-   with @hsc2hs@, to generate the final Haskell source code
-   which interfaces to ADNS.
+   <http://www.gnu.org/software/adns/>.
 
    You will most likely not need this module directly;
    "Network.DNS" provides a much nicer interface from the
-   Haskell world; this module contains basically just
-   marshaling code.
+   Haskell world; this module contains mostly marshaling
+   code.
 -}
 
 module Network.DNS.ADNS where
@@ -31,10 +29,10 @@ import Network.IP.Address
 import System.Posix.Poll
 import System.Posix.GetTimeOfDay
 
------ Mashal ADNS Data Types -----------------------------------------
-
 #include <adns.h>
 #include <errno.h>
+
+-- * Marshaled ADNS Data Types
 
 data OpaqueState
 type AdnsState = Ptr OpaqueState
@@ -47,11 +45,11 @@ data InitFlag
   | NoErrPrint    -- ^ never print output to stderr ('Debug' overrides)
   | NoServerWarn  -- ^ do not warn to stderr about duff nameservers etc
   | Debug         -- ^ enable all output to 'stderr' plus 'Debug' msgs
-  | LogPid        -- ^ include pid in diagnostic output
+  | LogPid        -- ^ include process id in diagnostic output
   | NoAutoSys     -- ^ do not make syscalls at every opportunity
   | Eintr         -- ^ allow 'adnsSynch' to return 'eINTR'
-  | NoSigPipe     -- ^ applic has SIGPIPE set to SIG_IGN, do not protect
-  | CheckC_EntEx  -- ^ do consistency checks on entry\/exit to adns funcs
+  | NoSigPipe     -- ^ application has SIGPIPE set to SIG_IGN, do not protect
+  | CheckC_EntEx  -- ^ do consistency checks on entry\/exit to adns functions
   | CheckC_Freq   -- ^ do consistency checks very frequently (slow!)
   deriving (Eq, Bounded, Show)
 
@@ -66,7 +64,7 @@ instance Enum InitFlag where
   toEnum #{const adns_if_nosigpipe}    = NoSigPipe
   toEnum #{const adns_if_checkc_entex} = CheckC_EntEx
   toEnum #{const adns_if_checkc_freq}  = CheckC_Freq
-  toEnum i = error ("ADNS.InitFlag cannot be mapped to value " ++ show i)
+  toEnum i = error ("Network.DNS.ADNS.InitFlag cannot be mapped to value " ++ show i)
 
   fromEnum NoEnv         = #{const adns_if_noenv}
   fromEnum NoErrPrint    = #{const adns_if_noerrprint}
@@ -101,7 +99,7 @@ instance Enum QueryFlag where
   toEnum #{const adns_qf_quotefail_cname} = QuoteFail_CName
   toEnum #{const adns_qf_cname_loose}     = CName_Loose
   toEnum #{const adns_qf_cname_forbid}    = CName_Forbid
-  toEnum i = error ("ADNS.QueryFlag cannot be mapped to value " ++ show i)
+  toEnum i = error ("Network.DNS.ADNS.QueryFlag cannot be mapped to value " ++ show i)
 
   fromEnum Search          = #{const adns_qf_search}
   fromEnum UseVC           = #{const adns_qf_usevc}
@@ -123,7 +121,7 @@ instance Enum RRType where
   toEnum #{const adns_r_mx}  = MX
   toEnum #{const adns_r_ns}  = NS
   toEnum #{const adns_r_ptr} = PTR
-  toEnum i = error ("ADNS.RRType cannot be mapped to value " ++ show i)
+  toEnum i = error ("Network.DNS.ADNS.RRType cannot be mapped to value " ++ show i)
 
   fromEnum A   = #{const adns_r_a}
   fromEnum MX  = #{const adns_r_mx}
@@ -138,18 +136,14 @@ instance Storable RRType where
   peek ptr     = let p = castPtr ptr :: Ptr #{type adns_rrtype}
                  in peek p >>= return . toEnum . fromEnum
 
--- |Because ADNS' status codes may vary with different
--- versions of the library, I don't want to provide a
--- \"comprehensive\" list by defining an enum type. Instead,
--- the 'Status' type contains the numeric value as returned
--- by ADNS itself.
---
--- For common status codes, helper functions are provided,
--- which construct the appropriate 'Status' instance.
--- Examples are 'sOK' or 'sNXDOMAIN'. The functions
--- 'adnsErrTypeAbbrev', 'adnsErrAbbrev', and 'adnsStrerror'
--- can also be used to map these codes into human readable
--- strings.
+-- |The status codes recognized by ADNS vary in different
+-- versions of the library. So instead of providing an
+-- 'Enum', the 'Status' type contains the numeric value as
+-- returned by ADNS itself. For common status codes, helper
+-- functions like 'sOK' or 'sNXDOMAIN' are provided. The
+-- functions 'adnsErrTypeAbbrev', 'adnsErrAbbrev', and
+-- 'adnsStrerror' can also be used to map these codes into
+-- human readable strings.
 
 newtype Status  = StatusCode Int
   deriving (Eq, Show)
@@ -197,7 +191,7 @@ newtype Status  = StatusCode Int
 -- >    } adns_rr_addr;
 --
 -- /Note/: Anything but @sockaddr_in@ will cause 'peek' to call 'fail',
--- when marshaling this structure.
+-- when marshaling this structure. 'poke' is not defined.
 
 newtype RRAddr = RRAddr HostAddress
   deriving (Eq)
@@ -213,12 +207,12 @@ instance Show RRAddr where
 instance Storable RRAddr where
   sizeOf _    = #{size adns_rr_addr}
   alignment _ = alignment (undefined :: CInt)
-  poke _ _    = error "poke is undefined for ADNS.RRAddr"
+  poke _ _    = fail "poke is undefined for Network.DNS.ADNS.RRAddr"
   peek ptr'   = do
     let ptr = #{ptr adns_rr_addr, addr} ptr'
     (t :: #{type sa_family_t}) <- #{peek struct sockaddr_in, sin_family} ptr
     if (t /= #{const AF_INET})
-       then fail ("peek ADNS.RRAddr: unsupported 'sockaddr' type " ++ show t)
+       then fail ("peek Network.DNS.ADNS.RRAddr: unsupported 'sockaddr' type " ++ show t)
        else #{peek struct sockaddr_in, sin_addr} ptr >>= return . RRAddr
 
 -- |Original definition:
@@ -230,13 +224,15 @@ instance Storable RRAddr where
 -- >      adns_rr_addr *addrs;
 -- >    } adns_rr_hostaddr;
 --
--- The @naddrs@ field is not available in @RRHostAddr@, because I
--- couldn't see how that information wouldn't be available in the
--- @astatus@ field, too. If I missed anything, someone let me know.
+-- The @naddrs@ field is not available in @RRHostAddr@
+-- because I couldn't see how that information wouldn't be
+-- available in the @astatus@ field too. If I missed
+-- anything, please let me know.
 --
--- /Note/: Eventually, I should return 'HostAddress' rather than
--- 'RRAddr'. I'm using the former only, because it has nicer output
--- with 'show'.
+-- /Note/: The data type should probably contain
+-- 'HostAddress' rather than 'RRAddr'. I'm using the former
+-- only because it has nicer output with 'show'. 'poke' is
+-- not defined.
 
 data RRHostAddr = RRHostAddr HostName Status [RRAddr]
   deriving (Show)
@@ -244,7 +240,7 @@ data RRHostAddr = RRHostAddr HostName Status [RRAddr]
 instance Storable RRHostAddr where
   sizeOf _    = #{size adns_rr_hostaddr}
   alignment _ = alignment (undefined :: CString)
-  poke _ _    = error "poke is undefined for ADNS.RRHostAddr"
+  poke _ _    = fail "poke is undefined for Network.DNS.ADNS.RRHostAddr"
   peek ptr    = do
     h <- #{peek adns_rr_hostaddr, host} ptr
     hstr <- assert (h /= nullPtr) (peekCString h)
@@ -269,7 +265,7 @@ data RRIntHostAddr = RRIntHostAddr Int RRHostAddr
 instance Storable RRIntHostAddr where
     sizeOf _     = #{size adns_rr_inthostaddr}
     alignment _  = alignment (undefined :: CInt)
-    poke _ _     = error "poke is undefined for ADNS.RRIntHostAddr"
+    poke _ _     = fail "poke is undefined for Network.DNS.ADNS.RRIntHostAddr"
     peek ptr     = do
       (i::CInt) <- #{peek adns_rr_inthostaddr, i} ptr
       a <- #{peek adns_rr_inthostaddr, ha} ptr
@@ -299,7 +295,7 @@ data Response
 instance Storable Answer where
   sizeOf _    = #{size adns_answer}
   alignment _ = alignment (undefined :: CInt)
-  poke _ _    = error "poke is not defined for ADNS.Answer"
+  poke _ _    = error "poke is not defined for Network.DNS.ADNS.Answer"
   peek ptr    = do
     sc <- #{peek adns_answer, status} ptr
     cn <- #{peek adns_answer, cname} ptr >>= maybePeek peekCString
@@ -318,11 +314,10 @@ instance Storable Answer where
         , rrs     = r
         }
 
--- |This function parses a the 'Response' union in the 'Answer'. It
--- cannot be defined via 'Storable', because it needs the type of the
--- record to expect as an additional parameter.
---
--- This is, by the way, the function to look at, if you want to add
+-- |This function parses the 'Response' union found in
+-- 'Answer'. It cannot be defined via 'Storable' because it
+-- needs to know the type of the record to expect. This is,
+-- by the way, the function to look at, if you want to add
 -- support for additional 'RRType' records.
 
 peekResp :: RRType -> Ptr b -> Int -> Int -> IO [Response]
@@ -339,13 +334,13 @@ peekResp rt ptr off n = do
   parseByType MX  = do (RRIntHostAddr i addr) <- peek (castPtr ptr)
                        return (RRMX i addr)
 
------ Provide Wrappers for ADNS functions ----------------------------
+-- * ADNS Library Functions
 
 -- |Run the given 'IO' computation with an initialized
 -- resolver. As of now, the diagnose stream is always set to
--- @stderr@. Initialize the library with the 'NoErrPrint'
--- flag if you don't wont to see any error output there. All
--- resources are freed @adnsInit@ returns.
+-- 'stderr'. Initialize the library with 'NoErrPrint' if you
+-- don't wont to see any error output. All resources are
+-- freed when @adnsInit@ returns.
 
 adnsInit :: [InitFlag] -> (AdnsState -> IO a) -> IO a
 adnsInit flags =
@@ -359,7 +354,7 @@ adnsInit flags =
 -- @nameserver@, @search@, @domain@, @sortlist@, and
 -- @options@.
 --
--- Furthermore, these non-standard commands may be used:
+-- Additionally, these non-standard commands may be used:
 --
 --  * @clearnameservers@: Clears the list of nameservers.
 --
@@ -373,14 +368,10 @@ adnsInitCfg flags cfg = bracket mkState adns_finish
                 (\p -> adns_init_strcfg p (mkFlags flags) nullPtr cstr)
                 peek
 
--- |@adnsSynch st name rt flags@ performs a synchronous
--- query for record @name@ of type @rt@. @st@ must be a
--- 'State' returned by 'adnsInit'. @flags@ may be any of
--- number of 'QueryFlag'.
---
--- In case of an I\/O error, an 'IOException' is thrown. If
--- the query fails for other reasons, the 'Status' code in
--- the 'Answer' will signify that.
+-- |Perform a synchronous query for a record. In case of an
+-- I\/O error, an 'IOException' is thrown. If the query
+-- fails for other reasons, the 'Status' code in the
+-- 'Answer' will signify that.
 
 adnsSynch :: AdnsState -> String -> RRType -> [QueryFlag] -> IO Answer
 adnsSynch st own rrt flags =
@@ -390,9 +381,8 @@ adnsSynch st own rrt flags =
         (adns_synchronous st o rrt' (mkFlags flags))
         (\p -> peek p >>= peek)
 
--- |Submit an asynchronous query using the same parameters
--- as 'adnsSynch'. The returned 'Query' can be tested for
--- completion with 'adnsCheck'.
+-- |Submit an asynchronous query. The returned 'Query' can
+-- be tested for completion with 'adnsCheck'.
 
 adnsSubmit :: AdnsState -> String -> RRType -> [QueryFlag] -> IO Query
 adnsSubmit st own rrt flags =
@@ -403,7 +393,7 @@ adnsSubmit st own rrt flags =
         (peek)
 
 -- |Check the status of an asynchronous query. If the query
--- is completed, the 'Answer' will be returned. The 'Query'
+-- is complete, the 'Answer' will be returned. The 'Query'
 -- becomes invalid after that.
 
 adnsCheck :: AdnsState -> Query -> IO (Maybe Answer)
@@ -433,41 +423,40 @@ adnsQueries st = adns_forallqueries_begin st >> walk
                        then walk >>= return . ((:) q)
                        else return []
 
--- |Find out which file descriptors ADNS is interested in,
+-- |Find out which file descriptors ADNS is interested in
 -- and when it would like to be able to time things out.
--- This is in a form suitable for use with @poll(2)@.
+-- This is in a form suitable for use with 'poll'.
 --
--- On entry, usually @fds@ should point to at least
--- @*nfds_io@ structs. ADNS will fill up to that many
--- structs will information for @poll@, and record in
--- @*nfds_io@ how many structs it filled. If it wants to
--- listen for more structs then @*nfds_io@ will be set to
--- the number required and 'adns_beforepoll' will return
--- 'eRANGE'.
+-- On entry, @fds@ should point to at least @*nfds_io@
+-- structs. ADNS will fill up to that many structs with
+-- information for @poll@, and record in @*nfds_io@ how many
+-- entries it actually used. If the array is too small,
+-- @*nfds_io@ will be set to the number required and
+-- 'adns_beforepoll' will return 'eRANGE'.
 --
 -- You may call 'adns_beforepoll' with @fds=='nullPtr'@ and
 -- @*nfds_io==0@, in which case ADNS will fill in the number
--- of fds that it might be interested in in @*nfds_io@, and
--- always return either 0 (if it is not interested in any
--- fds) or 'eRANGE' (if it is).
+-- of fds that it might be interested in into @*nfds_io@ and
+-- return either 0 (if it is not interested in any fds) or
+-- 'eRANGE' (if it is).
 --
--- /Note/ that (unless @now@ is 0) ADNS may acquire
--- additional fds from one call to the next, so you must put
+-- Note that (unless @now@ is 0) ADNS may acquire additional
+-- fds from one call to the next, so you must put
 -- adns_beforepoll in a loop, rather than assuming that the
 -- second call (with the buffer size requested by the first)
 -- will not return 'eRANGE'.
 --
--- ADNS only ever sets @POLLIN@, @POLLOUT@ and @POLLPRI@ in
--- its pollfd structs, and only ever looks at those bits.
--- @POLLPRI@ is required to detect TCP Urgent Data (which
+-- ADNS only ever sets 'PollIn', 'PollOut' and 'PollPri' in
+-- its 'Pollfd' structs, and only ever looks at those bits.
+-- 'PollPri' is required to detect TCP Urgent Data (which
 -- should not be used by a DNS server) so that ADNS can know
 -- that the TCP stream is now useless.
 --
 -- In any case, @*timeout_io@ should be a timeout value as
--- for @poll(2)@, which ADNS will modify downwards as
--- required. If the caller does not plan to block then
--- @*timeout_io@ should be 0 on entry, or alternatively,
--- @timeout_io@ may be 0.
+-- for 'poll', which ADNS will modify downwards as required.
+-- If the caller does not plan to block, then @*timeout_io@
+-- should be 0 on entry. Alternatively, @timeout_io@ may be
+-- 0.
 --
 -- 'adns_beforepoll' will return 0 on success, and will not
 -- fail for any reason other than the fds buffer being too
@@ -484,9 +473,9 @@ foreign import ccall unsafe "adns_beforepoll" adnsBeforePoll ::
   -> IO CInt
 
 -- |Gives ADNS flow-of-control for a bit; intended for use
--- after @poll(2)@. @fds@ and @nfds@ should be the results
--- from @poll()@. @pollfd@ structs mentioning fds not
--- belonging to adns will be ignored.
+-- after 'poll'. @fds@ and @nfds@ should be the results from
+-- 'poll'. 'Pollfd' structs mentioning fds not belonging to
+-- adns will be ignored.
 
 foreign import ccall unsafe "adns_afterpoll" adnsAfterPoll ::
   AdnsState -> Ptr Pollfd -> CInt -> Ptr Timeval -> IO ()
@@ -498,9 +487,9 @@ foreign import ccall unsafe "adns_afterpoll" adnsAfterPoll ::
 -- >    "No such domain"
 --
 -- Use this function with great care: It will crash the
--- process when called with a status code ADNS doesn't know
--- about. So only use it to print values you got from the
--- resolver!
+-- process when called with a status code that ADNS doesn't
+-- know about. So use it only to print values you got from
+-- the resolver!
 
 adnsStrerror :: Status -> IO String
 adnsStrerror (StatusCode x) = do
@@ -508,7 +497,7 @@ adnsStrerror (StatusCode x) = do
   assert (cstr /= nullPtr) (peekCString cstr)
 
 -- |Map a 'Status' code to a short error name. Don't use
--- this function with to print a status code unless you have
+-- this function to print a status code unless you've
 -- obtained it from the resolver!
 
 adnsErrAbbrev :: Status -> IO String
@@ -517,15 +506,15 @@ adnsErrAbbrev (StatusCode x) = do
   assert (cstr /= nullPtr) (peekCString cstr)
 
 -- |Map a 'Status' code to a short description of the type
--- of error. Don't use this function with to print a status
--- code unless you have obtained it from the resolver!
+-- of error. Don't use this function to print a status code
+-- unless you've obtained it from the resolver!
 
 adnsErrTypeAbbrev :: Status -> IO String
 adnsErrTypeAbbrev (StatusCode x) = do
   cstr <- (adns_errtypeabbrev . toEnum . fromEnum) x
   assert (cstr /= nullPtr) (peekCString cstr)
 
------ Low-level C Functions ------------------------------------------
+-- * Unmarshaled Low-Level C Functions
 
 foreign import ccall unsafe adns_init ::
   Ptr AdnsState -> CInt -> Ptr CFile -> IO CInt
@@ -558,7 +547,7 @@ foreign import ccall unsafe adns_strerror      :: CInt -> IO CString
 foreign import ccall unsafe adns_errabbrev     :: CInt -> IO CString
 foreign import ccall unsafe adns_errtypeabbrev :: CInt -> IO CString
 
------ Helper Functions -----------------------------------------------
+-- * Helper Functions
 
 -- |Internel helper function to handle result passing from
 -- ADNS via @Ptr (Ptr a)@, and to generate human-readable IO

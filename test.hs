@@ -23,17 +23,17 @@ main :: IO ()
 main = do
   names <- getArgs
   when (null names) (print "Usage: hostname [hostname ...]")
-  initResolver [ NoErrPrint, NoServerWarn ] $ \query -> do
+  initResolver [NoErrPrint, NoServerWarn] $ \resolver -> do
     rrChannel <- newChan :: IO (Chan CheckResult)
-    mapM_ (\h -> forkIO (ptrCheck query rrChannel h)) names
+    mapM_ (\h -> forkIO (ptrCheck resolver rrChannel h)) names
     replicateM_ (length names) (readChan rrChannel >>= print)
 
 ptrCheck :: Resolver -> Chan CheckResult -> HostName -> IO ()
-ptrCheck query chan host = do
-    a <- query host A [] >>= takeMVar
+ptrCheck resolver chan host = do
+    a <- resolver host A [] >>= takeMVar
     case a of
       Answer _ _ _ _ [RRA addr@(RRAddr addr')] -> do
-        ptr <- query (ha2ptr addr') PTR [] >>= takeMVar
+        ptr <- resolver (ha2ptr addr') PTR [] >>= takeMVar
         case ptr of
           Answer _ _ _ _ [RRPTR name] ->
             if (name == host)

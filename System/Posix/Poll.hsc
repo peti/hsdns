@@ -37,11 +37,13 @@ data Pollfd = Pollfd Fd CShort CShort
 instance Storable Pollfd where
     sizeOf _    = #{size struct pollfd}
     alignment _ = alignment (undefined :: CInt)
-    peek p      = do
+
+    peek p = do
       fd <- #{peek struct pollfd, fd} p
       e  <- #{peek struct pollfd, events} p
       re <- #{peek struct pollfd, revents} p
       return $ Pollfd fd e re
+
     poke p (Pollfd fd e re) = do
       #{poke struct pollfd, fd} p fd
       #{poke struct pollfd, events} p e
@@ -50,13 +52,14 @@ instance Storable Pollfd where
 -- |Marshaled 'Enum' representing the various @poll(2)@
 -- flags.
 
-data PollFlag = PollIn     -- ^ there is data to read
-              | PollPri    -- ^ there is urgent data to read
-              | PollOut    -- ^ writing now will not block
-              | PollErr    -- ^ error condition
-              | PollHup    -- ^ hung up
-              | PollNVal   -- ^ invalid request: fd not open
-              deriving (Eq, Bounded, Show)
+data PollFlag
+  = PollIn     -- ^ there is data to read
+  | PollPri    -- ^ there is urgent data to read
+  | PollOut    -- ^ writing now will not block
+  | PollErr    -- ^ error condition
+  | PollHup    -- ^ hung up
+  | PollNVal   -- ^ invalid request: fd not open
+  deriving (Eq, Bounded, Show)
 
 instance Enum PollFlag where
   toEnum #{const POLLIN}   = PollIn

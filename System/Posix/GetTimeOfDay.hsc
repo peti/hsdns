@@ -23,7 +23,7 @@ import Foreign.C
 data Timeval = Timeval CTime #{type suseconds_t}
 
 -- |Not really implemented by anyone; so we provide just a
--- place-holder.
+-- place-holder. Pass 'nullPtr' to 'gettimeofday'.
 
 data Timezone
 
@@ -37,9 +37,9 @@ instance Storable Timeval where
                    us <- #{peek struct timeval, tv_usec} ptr
                    return (Timeval t us)
 
--- |Write the current time of the day as a 'Timeval'. The
--- time is returned in local time, no time zone correction
--- takes place. Signals errors with 'throwErrno'.
+-- |Write the current time as a 'Timeval'. The time is
+-- returned in local time, no time zone correction takes
+-- place. Signals errors with 'throwErrno'.
 
 getTimeOfDay :: Ptr Timeval -> IO ()
 getTimeOfDay p  = do

@@ -15,7 +15,7 @@ module Data.Endian ( Endian(..), ourEndian ) where
 import Foreign
 
 -- |Definitions for byte order according to significance of
--- bytes, from low addresses to high addresses.
+-- bytes from low addresses to high addresses.
 
 data Endian
   = LittleEndian                -- ^ byte order: @1234@
