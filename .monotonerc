@@ -2,6 +2,7 @@
 
 function ignore_file(name)
   if (name == ".depend") then return true end
+  if (name == ".depend.bak") then return true end
   if (name == ".installed-pkg-config") then return true end
   if (name == ".setup-config") then return true end
   if (name == "Network/DNS/ADNS.hs") then return true end
@@ -9,6 +10,8 @@ function ignore_file(name)
   if (name == "System/Posix/Poll.hs") then return true end
   if (name == "hsdns.haddock") then return true end
   if (name == "index.html") then return true end
+  if (name == "package.conf.inplace") then return true end
+  if (name == "package.conf.installed") then return true end
   if (name == "test") then return true end
   if (name == "test.hi") then return true end
   if (name == "test.o") then return true end
