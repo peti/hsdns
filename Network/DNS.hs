@@ -1,13 +1,16 @@
 {- |
    Module      :  Network.DNS
-   Copyright   :  (c) 2005-02-02 by Peter Simons
+   Copyright   :  (c) 2005-02-04 by Peter Simons
    License     :  GPL2
 
    Maintainer  :  simons@cryp.to
    Stability   :  provisional
    Portability :  Haskell 2-pre
 
-   An asynchronous DNS resolver.
+   An asynchronous DNS resolver. Link your program with the
+   /threaded/ runtime-system when you use this module. In
+   GHC, this is accomplished by specifying @-threaded@ on
+   the command-line.
 -}
 
 module Network.DNS
@@ -17,6 +20,7 @@ module Network.DNS
   , resolveA
   , resolvePTR
   , resolveMX
+  , query
     -- Network
   , HostName
     -- Network.Socket

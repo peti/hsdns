@@ -1,21 +1,24 @@
 {- |
    Module      :  Network.DNS.PollResolver
-   Copyright   :  (c) 2005-02-02 by Peter Simons
+   Copyright   :  (c) 2005-02-04 by Peter Simons
    License     :  GPL2
 
    Maintainer  :  simons@cryp.to
    Stability   :  provisional
    Portability :  Haskell 2-pre
 
-   This module providers a 'poll'-based I\/O scheduler for
+   This module provides a 'poll'-based I\/O scheduler for
    "Network.DNS.ADNS". See the @test.hs@ program included in
    the distribution for an example of how to use this
-   resolver.
+   resolver. Link your program with the /threaded/
+   runtime-system when you use this module. In GHC, this is
+   accomplished by specifying @-threaded@ on the
+   command-line.
  -}
 
 module Network.DNS.PollResolver where
 
-import Control.Concurrent ( forkOS )
+import Control.Concurrent ( forkIO )
 import Control.Concurrent.MVar
 import Control.Monad      ( when )
 import Data.List          ( sortBy )
@@ -95,6 +98,29 @@ resolveMX query x = do
                            , RRAddr a <- has ]
        return (Right as)
 
+-- |Convenience wrapper that will modify any of the
+-- @revolveXXX@ functions above to return 'Maybe' rather
+-- than 'Either'. The idea is that @Nothing@ signifies any
+-- sort of failure; @Just []@ signifies 'sNXDOMAIN'; and
+-- everything else signifies 'sOK'.
+--
+-- So if you aren't interested in getting accurate 'Status'
+-- codes in case of failures. Wrap your DNS queries as
+-- follows:
+--
+-- > queryA :: Resolver -> HostName -> IO (Maybe [HostAddress])
+-- > queryA = query resolveA
+
+query :: (Resolver -> a -> IO (Either Status [b]))
+      -> (Resolver -> a -> IO (Maybe [b]))
+query f dns x = fmap toMaybe (f dns x)
+  where
+  toMaybe (Left rc)
+    | rc == sNXDOMAIN  = Just []
+    | otherwise        = Nothing
+  toMaybe (Right r)    = Just r
+
+
 ----- Implementation -------------------------------------------------
 
 data ResolverState = RState
@@ -110,7 +136,7 @@ resolve mst r rt qfs = modifyMVar mst $ \st -> do
   res <- newEmptyMVar
   q <- adnsSubmit (adns st) r rt qfs
   when (null (queries st))
-    (forkOS (resolveLoop mst) >> return ())
+    (forkIO (resolveLoop mst) >> return ())
   let st' = st { queries = (q,res):(queries st)
                , touched = True
                }
