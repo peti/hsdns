@@ -1,7 +1,14 @@
 -- Resolve a bunch of hostnames' A records, then resolve
 -- those A-record's PTR records and check whether they
 -- match. Do it all asynchronously. The results are printed
--- in the order the answers come in.
+-- in the order the answers come in:
+--
+--   $ ghc -threaded --make test.hs -o test -ladns
+--   $ ./test xyz.example.org ecrc.de www.example.com www.cryp.to
+--   DNSError "xyz.example.org: can't resolve A:" nxdomain
+--   NotOK "www.cryp.to" 195.234.152.69 "research.cryp.to"
+--   NotOK "ecrc.de" 127.0.0.1 "localhost"
+--   OK "www.example.com" 192.0.34.166
 
 module Main where
 

@@ -56,4 +56,4 @@ Copyleft
 
 .. _hsdns-2005-02-14.tar.gz: http://cryp.to/hsdns/hsdns-2005-02-14.tar.gz
 
-.. _test.hs: test.hs
+.. _test.hs: example/test.hs

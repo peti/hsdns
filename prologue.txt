@@ -1,5 +1,3 @@
-An asynchronous DNS resolver for Haskell.
-
 This package provides bindings to the GNU adns library
 <http://www.gnu.org/software/adns/> as well as an
 appropriate high-level interface from the Haskell world. Not
