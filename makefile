@@ -13,7 +13,8 @@ all::
 	@$(CABAL) build
 
 test:		test.hs
-	ghc -threaded -O -Wall '-#include <adns.h>' --make test.hs -o $@ -ladns
+	ghc -threaded -O -Wall '-#include <adns.h>' '-#include <sys/poll.h>' \
+	    --make test.hs -o $@ -ladns
 
 docs::
 	@-mkdir docs
