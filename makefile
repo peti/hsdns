@@ -7,20 +7,22 @@ GHCURL		:= http://haskell.org/ghc/docs/latest/html/libraries
 GHCPREFIX	:= /usr/local/ghc-current/share/ghc-6.3/html/libraries
 CABAL		:= runghc /usr/local/src/cabal-current/Setup.lhs
 
-.PHONY: all clean distclean dist redate init-src
+.PHONY: all docs clean distclean dist redate init-src
 
 all::
 	@$(CABAL) build
-	@-mkdir docs
-	@haddock -v -h -t 'HsDNS: Asynchronous DNS Resolver' \
-	  -i $(GHCURL)/base,$(GHCPREFIX)/base/base.haddock \
-	  -i $(GHCURL)/network,$(GHCPREFIX)/network/network.haddock \
-	  -s .. -o docs */[A-Z]*.hs */*/[A-Z]*.hs
 
 test:		test.hs
 	ghc -threaded -O -Wall --make test.hs -o $@ -ladns
 
-dist::		clean index.html
+docs::
+	@-mkdir docs
+	@haddock -v -h -t 'An asynchronous DNS resolver' \
+	  -i $(GHCURL)/base,$(GHCPREFIX)/base/base.haddock \
+	  -i $(GHCURL)/network,$(GHCPREFIX)/network/network.haddock \
+	  -s .. -o docs */[A-Z]*.hs */*/[A-Z]*.hs
+
+dist::		docs clean index.html
 	@darcs dist --dist-name $(DISTNAME)
 
 index.html:	README

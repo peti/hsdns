@@ -2,33 +2,23 @@ An asynchronous DNS resolver for Haskell_
 =========================================
 
 :Latest Release: hsdns-2005-02-02.tar.gz_
-:Darcs:          darcs_ get --partial http://cryp.to/hsdns/
+:Darcs:          darcs_ get http://cryp.to/hsdns/
 
 Synopsis
 --------
 
-  ``ADNS``
-      provides access to the `GNU ADNS library`_ via the
-      standard foreign function interface. Not all options
-      are supported as of now, but you can do A, MX, NS,
-      and PTR lookups. It has been tested with ADNS
-      versions 1.0 and 1.1.
+  This library provides an asynchronous DNS resolver on top
+  of the `GNU ADNS library`_. Not all options are supported
+  as of now, but you can do A, MX, NS, and PTR lookups. It
+  has been tested with ADNS versions 1.0 and 1.1. Build
+  instructions for Cabal_ are included.
 
-  ``PollResolver``
-      implements the I/O driver needed to make the ADNS
-      library actually do something. This implementation is
-      based on ``poll(2)``. For the user, the interface is
-      rather simple: You sumbit a query and get an ``MVar``
-      back which will be filled once the DNS answer
-      arrives.
+  The example program test.hs_ demonstrates how the resolver
+  can be used: it performs an A/PTR double-check for a list
+  of hostnames given on the command-line. You can run the
+  program by executing::
 
-  In test.hs_ you will find an example program that performs
-  an A/PTR double-check for a list of hostnames given on the
-  command-line. To use the program, execute::
-
-    $ hsc2hs Network/DNS/ADNS.hsc
-    $ ghc -threaded '-#include <adns.h>' '-#include <sys/poll.h>' \
-          --make test.hs -o test -ladns
+    $ ghc -threaded --make test.hs -o test -ladns
     $ ./test xyz.example.org ecrc.de www.example.com www.cryp.to
     DNSError "xyz.example.org: can't resolve A:" nxdomain
     NotOK "www.cryp.to" 195.234.152.69 "research.cryp.to"
@@ -55,6 +45,8 @@ Copyleft
 `[Homepage] <http://cryp.to/>`_
 
 .. _Haskell: http://haskell.org/
+
+.. _Cabal: http://haskell.org/cabal/
 
 .. _darcs: http://abridgegame.org/darcs/
 
