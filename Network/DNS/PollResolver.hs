@@ -1,6 +1,6 @@
 {- |
    Module      :  Network.DNS.PollResolver
-   Copyright   :  (c) 2005-02-04 by Peter Simons
+   Copyright   :  (c) 2005-02-06 by Peter Simons
    License     :  GPL2
 
    Maintainer  :  simons@cryp.to
@@ -117,6 +117,14 @@ query f dns x = fmap toMaybe (f dns x)
     | rc == sNXDOMAIN  = Just []
     | otherwise        = Nothing
   toMaybe (Right r)    = Just r
+
+-- |Use this function to disable DNS resolving. It will
+-- always return @('Answer' 'sSYSTEMFAIL' Nothing (Just
+-- host) (-1) [])@.
+
+dummyDNS :: Resolver
+dummyDNS host _ _ = newMVar
+  (Answer sSYSTEMFAIL Nothing (Just host) (-1) [])
 
 -- * Implementation
 
