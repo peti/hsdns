@@ -26,7 +26,7 @@ Synopsis
   an A/PTR double-check for a list of hostnames given on the
   command-line. To use the program, execute::
 
-    $ hsc2hs ADNS.hsc
+    $ hsc2hs Network/DNS/ADNS.hsc
     $ ghc -threaded '-#include <adns.h>' '-#include <sys/poll.h>' \
           --make test.hs -o test -ladns
     $ ./test xyz.example.org ecrc.de www.example.com www.cryp.to

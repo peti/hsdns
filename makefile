@@ -36,7 +36,7 @@ docs/index.html: Network/DNS/ADNS.hs $(DISTFILES)
 	@haddock -h -t 'Asynchronous DNS Resolver' \
 	  -i $(GHCURL)/base,$(GHCPREFIX)/base/base.haddock \
 	  -i $(GHCURL)/network,$(GHCPREFIX)/network/network.haddock \
-	  -s .. -o docs `find . -name [A-Z]*.hs`
+	  -s .. -o docs */[A-Z]*.hs */*/[A-Z]*.hs
 
 index.html:	README
 	@lhs2html $<
