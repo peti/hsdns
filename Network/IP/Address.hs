@@ -37,7 +37,7 @@ ha2tpl n =
     PDPEndian    -> (fromEnum b4, fromEnum b3, fromEnum b1, fromEnum b2)
 
 -- |Turn a 32-bit IP address into a string suitable for
--- 'PTR' lookups in the Domain Name System.
+-- 'Network.DNS.PTR' lookups in the Domain Name System.
 
 ha2ptr :: HostAddress -> String
 ha2ptr n = shows b4 . ('.':) .
