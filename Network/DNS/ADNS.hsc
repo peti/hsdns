@@ -1,7 +1,7 @@
 {-# OPTIONS -fffi -fglasgow-exts #-}
 {- |
    Module      :  Network.DNS.ADNS
-   Copyright   :  (c) 2005-02-04 by Peter Simons
+   Copyright   :  (c) 2005-02-05 by Peter Simons
    License     :  GPL2
 
    Maintainer  :  simons@cryp.to
@@ -44,7 +44,7 @@ data InitFlag
   = NoEnv         -- ^ do not look at environment
   | NoErrPrint    -- ^ never print output to stderr ('Debug' overrides)
   | NoServerWarn  -- ^ do not warn to stderr about duff nameservers etc
-  | Debug         -- ^ enable all output to 'stderr' plus 'Debug' msgs
+  | Debug         -- ^ enable all output to stderr plus 'Debug' msgs
   | LogPid        -- ^ include process id in diagnostic output
   | NoAutoSys     -- ^ do not make syscalls at every opportunity
   | Eintr         -- ^ allow 'adnsSynch' to return 'eINTR'
@@ -275,7 +275,7 @@ data Answer = Answer
   { status  :: Status
       -- ^ Status code for this query.
   , cname   :: Maybe String
-      -- ^ Always 'Nothing' for 'CNAME' queries (which are not supported yet anyway).
+      -- ^ Always 'Nothing' for @CNAME@ queries (which are not supported yet anyway).
   , owner   :: Maybe String
       -- ^ Only set if 'Owner' was requested for query.
   , expires :: CTime
@@ -338,7 +338,7 @@ peekResp rt ptr off n = do
 
 -- |Run the given 'IO' computation with an initialized
 -- resolver. As of now, the diagnose stream is always set to
--- 'stderr'. Initialize the library with 'NoErrPrint' if you
+-- 'System.IO.stderr'. Initialize the library with 'NoErrPrint' if you
 -- don't wont to see any error output. All resources are
 -- freed when @adnsInit@ returns.
 
@@ -369,9 +369,9 @@ adnsInitCfg flags cfg = bracket mkState adns_finish
                 peek
 
 -- |Perform a synchronous query for a record. In case of an
--- I\/O error, an 'IOException' is thrown. If the query
--- fails for other reasons, the 'Status' code in the
--- 'Answer' will signify that.
+-- I\/O error, an 'System.IO.Error.IOException' is thrown.
+-- If the query fails for other reasons, the 'Status' code
+-- in the 'Answer' will signify that.
 
 adnsSynch :: AdnsState -> String -> RRType -> [QueryFlag] -> IO Answer
 adnsSynch st own rrt flags =
@@ -432,9 +432,9 @@ adnsQueries st = adns_forallqueries_begin st >> walk
 -- information for @poll@, and record in @*nfds_io@ how many
 -- entries it actually used. If the array is too small,
 -- @*nfds_io@ will be set to the number required and
--- 'adns_beforepoll' will return 'eRANGE'.
+-- 'adnsBeforePoll' will return 'eRANGE'.
 --
--- You may call 'adns_beforepoll' with @fds=='nullPtr'@ and
+-- You may call 'adnsBeforePoll' with @fds=='nullPtr'@ and
 -- @*nfds_io==0@, in which case ADNS will fill in the number
 -- of fds that it might be interested in into @*nfds_io@ and
 -- return either 0 (if it is not interested in any fds) or
@@ -458,7 +458,7 @@ adnsQueries st = adns_forallqueries_begin st >> walk
 -- should be 0 on entry. Alternatively, @timeout_io@ may be
 -- 0.
 --
--- 'adns_beforepoll' will return 0 on success, and will not
+-- 'adnsBeforePoll' will return 0 on success, and will not
 -- fail for any reason other than the fds buffer being too
 -- small (ERANGE).
 --
