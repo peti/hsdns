@@ -573,5 +573,5 @@ mkFlags = toEnum . sum . map fromEnum
 -- ----- Configure Emacs -----
 --
 -- Local Variables: ***
--- haskell-ghci-program-args: ( "-ladns" ) ***
+-- haskell-program-name: "ghci -ladns -lcrypto" ***
 -- End: ***

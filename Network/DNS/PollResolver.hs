@@ -218,8 +218,9 @@ resolveLoop mst = do
                 , capacity = n'
                 }
 
+
 -- ----- Configure Emacs -----
 --
 -- Local Variables: ***
--- haskell-ghci-program-args: ( "-ladns" ) ***
+-- haskell-program-name: "ghci -ladns -lcrypto" ***
 -- End: ***
