@@ -4,7 +4,7 @@ PACKAGE     := hsdns
 RELEASE     := `date --iso-8601`
 DISTARCHIVE := $(PACKAGE)-$(RELEASE).tar.gz
 DISTFILES   := Data/Endian.hs Network/DNS/ADNS.hsc Network/DNS/PollResolver.hs \
-               test.hs README
+               test.hs README hsdns.cabal
 GHCURL      := http://haskell.org/ghc/docs/latest/html/libraries
 GHCPREFIX   := /usr/local/ghc-current/share/ghc-6.3/html/libraries
 GHCFLAGS    := -Wall -O \
@@ -17,7 +17,10 @@ all::	docs/index.html
 dist::	docs/index.html index.html $(DISTFILES)
 	@rm -rf $(DISTARCHIVE) $(PACKAGE)-$(RELEASE)
 	@mkdir $(PACKAGE)-$(RELEASE)
-	@cp -rp $(DISTFILES) docs $(PACKAGE)-$(RELEASE)/
+	for n in $(DISTFILES); do \
+	  install -D -m 644 $$n $(PACKAGE)-$(RELEASE)/$$n; \
+	done
+	@cp -rp docs $(PACKAGE)-$(RELEASE)/
 	@echo Created $(DISTARCHIVE).
 	@tar cfvz $(DISTARCHIVE) $(PACKAGE)-$(RELEASE)
 	@rm -rf $(PACKAGE)-$(RELEASE)
@@ -28,13 +31,12 @@ dist::	docs/index.html index.html $(DISTFILES)
 test:		Network/DNS/ADNS.hs Network/DNS/PollResolver.hs test.hs
 	ghc -threaded $(GHCFLAGS) --make test.hs -o $@ -ladns
 
-docs/index.html: ADNS.hs $(DISTFILES)
+docs/index.html: Network/DNS/ADNS.hs $(DISTFILES)
 	@-mkdir docs
-	@hsc2hs ADNS.hsc
 	@haddock -h -t 'Asynchronous DNS Resolver' \
 	  -i $(GHCURL)/base,$(GHCPREFIX)/base/base.haddock \
 	  -i $(GHCURL)/network,$(GHCPREFIX)/network/network.haddock \
-	  -s .. -o docs [A-Z]*.hs
+	  -s .. -o docs `find . -name [A-Z]*.hs`
 
 index.html:	README
 	@lhs2html $<
@@ -42,8 +44,9 @@ index.html:	README
 	@rm -f README.html
 
 distclean clean::
-	rm -rf docs
-	rm -f *.o *.hi a.out test ADNS.hs ADNS_stub.?
+	rm -rf docs $(DISTARCHIVE) $(PACKAGE)-$(RELEASE)
+	rm -f `find . \( -name *.o -o -name *.hi \)`
+	rm -f test Network/DNS/ADNS.hs Network/DNS/ADNS_stub.?
 	rm -f README.html $(PACKAGE)-*.tar.gz
 
 redate::

@@ -1,6 +1,6 @@
 {- |
    Module      :  PollResolver
-   Copyright   :  (c) 2005-01-04 by Peter Simons
+   Copyright   :  (c) 2005-02-02 by Peter Simons
    License     :  GPL2
 
    Maintainer  :  simons@cryp.to

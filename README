@@ -1,7 +1,7 @@
 An asynchronous DNS resolver for Haskell_
 =========================================
 
-:Latest Release: hsdns-2005-01-04.tar.gz_
+:Latest Release: hsdns-2005-02-02.tar.gz_
 :Darcs:          darcs_ get --partial http://cryp.to/hsdns/
 
 Synopsis
@@ -62,6 +62,6 @@ Copyleft
 
 .. _Reference Documentation: docs/index.html
 
-.. _hsdns-2005-01-04.tar.gz: http://cryp.to/hsdns/hsdns-2005-01-04.tar.gz
+.. _hsdns-2005-02-02.tar.gz: http://cryp.to/hsdns/hsdns-2005-02-02.tar.gz
 
 .. _test.hs: test.hs

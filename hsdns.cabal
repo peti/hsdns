@@ -1,0 +1,10 @@
+name:		hsdns
+version:	2005-02-02
+license:	GPL
+maintainer:	simons@cryp.to
+description:	asynchronous DNS resolver
+build-depends:	base, network
+exposed-modules:
+	Network.DNS.ADNS,
+	Network.DNS.PollResolver,
+	Data.Endian
