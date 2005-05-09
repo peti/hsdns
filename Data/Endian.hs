@@ -37,5 +37,5 @@ ourEndian =
       case val' of
         (0x01:0x02:0x03:0x04:[]) -> return BigEndian
         (0x04:0x03:0x02:0x01:[]) -> return LittleEndian
-        (0x02:0x01:0x03:0x04:[]) -> return PDPEndian
+        (0x03:0x04:0x01:0x02:[]) -> return PDPEndian
         _                        -> error "unknown endian"
