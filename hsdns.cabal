@@ -6,7 +6,7 @@ Maintainer:      simons@cryp.to
 Homepage:        http://cryp.to/hsdns/
 Description:     Asynchronous DNS Resolver
 Build-Depends:   base, network
-Extra-Libs:      adns
+Extra-Libraries: adns
 Includes:        "<adns.h>", "<sys/poll.h>", "<sys/time.h>",
                  "<errno.h>"
 Extensions:      ForeignFunctionInterface
