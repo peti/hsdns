@@ -24,5 +24,13 @@ function ignore_file(name)
   if (string.find(name, "_hsc%.c$")) then return true end
   if (string.find(name, "_split/")) then return true end
 
+  if (name == ".depend") then return true end
+  if (name == "package.conf.installed") then return true end
+  if (string.find(name, "%.a")) then return true end
+  if (string.find(name, "%_hi$")) then return true end
+  if (string.find(name, "%_o$")) then return true end
+  if (string.find(name, "%.hi$")) then return true end
+  if (string.find(name, "%.o$")) then return true end
+
   return false
 end
