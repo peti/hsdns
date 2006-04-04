@@ -99,8 +99,8 @@ resolveMX resolver x = do
 -- |Convenience wrapper that will modify any of the
 -- @revolveXXX@ functions above to return 'Maybe' rather
 -- than 'Either'. The idea is that @Nothing@ signifies any
--- sort of failure; @Just []@ signifies 'sNXDOMAIN'; and
--- everything else signifies 'sOK'.
+-- sort of failure: @Just []@ signifies 'sNXDOMAIN' or
+-- 'sNODATA', and everything else signifies 'sOK'.
 --
 -- So if you aren't interested in getting accurate 'Status'
 -- codes in case of failures. Wrap your DNS queries as
@@ -115,6 +115,7 @@ query f dns x = fmap toMaybe (f dns x)
   where
   toMaybe (Left rc)
     | rc == sNXDOMAIN  = Just []
+    | rc == sNODATA    = Just []
     | otherwise        = Nothing
   toMaybe (Right r)    = Just r
 
