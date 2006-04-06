@@ -11,7 +11,7 @@ ALL_DIRS =	       \
     System/Posix
 
 PACKAGE		:= hsdns
-RELEASEDAY	:= 2005-02-14
+RELEASEDAY	:= 2006-04-06
 VERSION		:= 0.0-$(RELEASEDAY)
 PACKAGE_DEPS	:= base network
 

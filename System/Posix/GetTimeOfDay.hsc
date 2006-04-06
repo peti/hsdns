@@ -1,7 +1,7 @@
 {-# OPTIONS -fffi -fglasgow-exts #-}
 {- |
    Module      :  System.Posix.GetTimeOfDay
-   Copyright   :  (c) 2005-02-04 by Peter Simons
+   Copyright   :  (c) 2006-04-06 by Peter Simons
    License     :  GPL2
 
    Maintainer  :  simons@cryp.to
