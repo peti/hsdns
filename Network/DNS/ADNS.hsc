@@ -1,7 +1,7 @@
 {-# OPTIONS -fffi -fglasgow-exts #-}
 {- |
    Module      :  Network.DNS.ADNS
-   Copyright   :  (c) 2005-02-05 by Peter Simons
+   Copyright   :  (c) 2006-04-08 by Peter Simons
    License     :  GPL2
 
    Maintainer  :  simons@cryp.to

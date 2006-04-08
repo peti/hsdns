@@ -1,7 +1,7 @@
 {-# OPTIONS -fffi -fglasgow-exts #-}
 {- |
    Module      :  System.Posix.Poll
-   Copyright   :  (c) 2005-02-04 by Peter Simons
+   Copyright   :  (c) 2006-04-08 by Peter Simons
    License     :  GPL2
 
    Maintainer  :  simons@cryp.to
