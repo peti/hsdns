@@ -24,3 +24,4 @@ _hi$
 _hsc\.c$
 _o$
 _split(/|$)
+^Setup.lhs$
