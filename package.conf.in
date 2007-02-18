@@ -1,0 +1,26 @@
+name:		PACKAGE
+version:	VERSION
+license:	GPL
+maintainer:	simons@cryp.to
+exposed:	True
+
+exposed-modules:
+    Data.Endian,
+    Network.DNS,
+    Network.DNS.ADNS,
+    Network.DNS.PollResolver,
+    Network.IP.Address,
+    System.Posix.GetTimeOfDay,
+    System.Posix.Poll
+
+hidden-modules:
+
+import-dirs:	IMPORT_DIR
+library-dirs:	LIB_DIR
+hs-libraries:   "HShsdns"
+extra-libs:	"adns"
+includes:	"<adns.h>", "<sys/poll.h>", "<sys/time.h>", "<errno.h>"
+depends:	base, network
+
+haddock-interfaces:	HADDOCK_IFACE
+haddock-html:		HTML_DIR
