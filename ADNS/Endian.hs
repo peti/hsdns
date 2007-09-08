@@ -10,10 +10,7 @@
    Determine the machine's endian.
 -}
 
-module ADNS.Endian ( Endian(..), endian
-                   , readWord32, readWord16
-                   )
-  where
+module ADNS.Endian ( Endian(..), endian, readWord32, readWord16 ) where
 
 import Foreign
 
