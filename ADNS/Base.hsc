@@ -19,14 +19,14 @@
    code.
 -}
 
-module Network.DNS.ADNS where
+module ADNS.Base where
 
 import Control.Exception        ( assert, bracket )
 import Network                  ( HostName )
 import Network.Socket           ( HostAddress )
 import Foreign
 import Foreign.C
-import Data.Endian
+import ADNS.Endian
 
 #include <adns.h>
 #include <errno.h>
@@ -538,18 +538,6 @@ wrapAdns m acc  = alloca $ \resP -> do
 
 mkFlags :: Enum a => [a] -> CInt
 mkFlags = toEnum . sum . map fromEnum
-
-readWord32 :: Word32 -> (Word8, Word8, Word8, Word)
-readWord32 n =
-  let (b1,n1) = (n  .&. 255, n  `shiftR` 8)
-      (b2,n2) = (n1 .&. 255, n1 `shiftR` 8)
-      (b3,n3) = (n2 .&. 255, n2 `shiftR` 8)
-      b4      = n3 .&. 255
-  in
-  case endian of
-    BigEndian    -> (fromIntegral b4, fromIntegral b3, fromIntegral b2, fromIntegral b1)
-    LittleEndian -> (fromIntegral b1, fromIntegral b2, fromIntegral b3, fromIntegral b4)
-    PDPEndian    -> (fromIntegral b4, fromIntegral b3, fromIntegral b1, fromIntegral b2)
 
 
 -- ----- Configure Emacs -----

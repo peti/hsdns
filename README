@@ -1,25 +1,24 @@
 An asynchronous DNS resolver for Haskell_
 =========================================
 
-:Latest Release: hsdns-2006-04-08.tar.gz_
+:Latest Release: hsdns-1.0.tar.gz_
 :Darcs:          darcs_ get http://cryp.to/hsdns/
 
 Synopsis
 --------
 
-  This library provides an asynchronous DNS resolver on top
-  of the `GNU ADNS library`_. Not all options are supported
-  as of now, but you can do A, MX, NS, and PTR lookups. It
-  has been tested with ADNS versions 1.0 and 1.1. Build
-  instructions for Cabal_ are included.
+  This library provides an asynchronous DNS resolver on top of
+  the `GNU ADNS library`_. Not all options are supported as of
+  now, but you can do A, MX, NS, and PTR lookups. It has been
+  tested with ADNS versions 1.0 and 1.1. Build instructions for
+  Cabal_ are included.
 
-  The example program test.hs_ demonstrates how the resolver
-  can be used: it performs an A/PTR double-check for a list
-  of hostnames given on the command-line. You can run the
-  program by executing::
+  The example program adns-reverse-lookup.hs_ demonstrates how
+  the resolver can be used. Given a list of host names on the
+  command line, It performs an A/PTR double-lookup and checks
+  whether the records are consistent::
 
-    $ ghc -threaded --make test.hs -o test -ladns
-    $ ./test xyz.example.org ecrc.de www.example.com www.cryp.to
+    $ ./adns-reverse-lookup xyz.example.org ecrc.de www.example.com www.cryp.to
     DNSError "xyz.example.org: can't resolve A:" nxdomain
     NotOK "www.cryp.to" 195.234.152.69 "research.cryp.to"
     NotOK "ecrc.de" 127.0.0.1 "localhost"
@@ -29,16 +28,15 @@ Documentation
 -------------
 
   `Reference Documentation`_
-     Haddock-generated reference of all exported
-     functions.
+     Haddock-generated reference of all exported functions.
 
 Copyleft
 --------
 
-  Copyright (c) 2005 Peter Simons <simons@cryp.to>. All
-  rights reserved. This software is released under the terms
-  of the `GNU General Public License
-  <http://www.gnu.org/licenses/gpl.html>`_.
+  Copyright (c) 2007 Peter Simons <simons@cryp.to>. All rights
+  reserved. This software is released under the terms of the `GNU
+  Lesser General Public License
+  <http://www.gnu.org/licenses/lgpl.html>`_.
 
 -----------------------------------------------------------------
 
@@ -54,6 +52,6 @@ Copyleft
 
 .. _Reference Documentation: docs/index.html
 
-.. _hsdns-2006-04-08.tar.gz: http://cryp.to/hsdns/hsdns-2006-04-08.tar.gz
+.. _hsdns-1.0.tar.gz: http://cryp.to/hsdns/hsdns-1.0.tar.gz
 
-.. _test.hs: example/test.hs
+.. _adns-reverse-lookup.hs: exapmle/adns-reverse-lookup.hs

@@ -1,11 +1,11 @@
 {- |
-   Module      :  Network.DNS.PollResolver
-   Copyright   :  (c) 2006-04-08 by Peter Simons
-   License     :  GPL2
+   Module      :  ADNS.Resolver
+   Copyright   :  (c) 2007 Peter Simons
+   License     :  LGPL
 
    Maintainer  :  simons@cryp.to
    Stability   :  provisional
-   Portability :  Haskell 2-pre
+   Portability :  portable
 
    This module provides a 'poll'-based I\/O scheduler for
    "Network.DNS.ADNS". See the @test.hs@ program included in
@@ -16,7 +16,15 @@
    command-line.
  -}
 
-module Network.DNS.PollResolver where
+module ADNS.Resolver
+  ( Resolver
+  , initResolver
+  , toPTR
+  , resolveA, resolvePTR, resolveMX
+  , query
+  , dummyDNS
+  )
+  where
 
 import Control.Concurrent ( forkIO )
 import Control.Concurrent.MVar
@@ -26,14 +34,12 @@ import Data.Map ( Map )
 import qualified Data.Map as Map
 import Network            ( HostName )
 import Network.Socket     ( HostAddress )
-import Network.DNS.ADNS
+import ADNS.Base
+import ADNS.Endian
 
--- * Resolver API
-
--- |A 'Resolver' is an 'IO' computation which -- given the
--- name and type of the record to query -- returns an 'MVar'
--- that will eventually contain the 'Answer' from the Domain
--- Name System.
+-- |A 'Resolver' is an 'IO' computation which -- given the name
+-- and type of the record to query -- returns an 'MVar' that will
+-- eventually contain the 'Answer' from the Domain Name System.
 
 type Resolver = String -> RRType -> [QueryFlag] -> IO (MVar Answer)
 
@@ -156,8 +162,7 @@ resolve mst r rt qfs = modifyMVar mst $ \st -> do
   let st' = st { queries = Map.insert q res (queries st) }
   return (st', res)
 
--- |Loop until all open queries have been resolved. Uses
--- 'poll' internally to avoid busy-polling the ADNS sockets.
+-- |Loop until all open queries have been resolved.
 
 resolveLoop :: MVar ResolverState -> IO ()
 resolveLoop mst = do
@@ -173,5 +178,5 @@ resolveLoop mst = do
 -- ----- Configure Emacs -----
 --
 -- Local Variables: ***
--- haskell-program-name: "ghci -ladns -lcrypto" ***
+-- haskell-program-name: "ghci -ladns" ***
 -- End: ***

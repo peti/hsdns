@@ -1,20 +1,23 @@
-Name:            hsdns
-Version:         0.0-2006-04-08
-Author:          Peter Simons <simons@cryp.to>
-License:         GPL
-Maintainer:      simons@cryp.to
-Homepage:        http://cryp.to/hsdns/
-Description:     Asynchronous DNS Resolver
-Build-Depends:   base, network
-Extra-Libraries: adns
-Includes:        "<adns.h>", "<sys/poll.h>", "<sys/time.h>",
-                 "<errno.h>"
-Extensions:      ForeignFunctionInterface
-Exposed-Modules:
-    Data.Endian,
-    Network.DNS,
-    Network.DNS.ADNS,
-    Network.DNS.PollResolver,
-    Network.IP.Address,
-    System.Posix.GetTimeOfDay,
-    System.Posix.Poll
+Name:			hsdns
+Version:		1.0
+Author:			Peter Simons <simons@cryp.to>
+License:		LGPL
+Homepage:		http://cryp.to/hsdns/
+Description:		Asynchronous DNS Resolver
+Category:		Foreign, Network
+Build-Depends:		base, network
+Extensions:		ForeignFunctionInterface
+Extra-Libraries:	adns
+Includes:		"<adns.h>", "<errno.h>"
+Exposed-Modules:	ADNS,
+			ADNS.Base,
+			ADNS.Endian,
+			ADNS.Resolver
+GHC-Options:		-O -Wall
+
+Data-Files:		README, prologue.txt
+
+Executable:		adns-reverse-lookup
+Hs-Source-Dirs:		example, .
+Main-Is:		adns-reverse-lookup.hs
+Extra-Libraries:	adns

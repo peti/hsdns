@@ -12,19 +12,26 @@
 
 module Main ( main ) where
 
-import Control.Monad           ( when, replicateM_ )
-import Control.Concurrent      ( forkIO )
-import Control.Concurrent.MVar ( takeMVar )
-import Control.Concurrent.Chan ( Chan, newChan, writeChan, readChan )
-import System.Environment      ( getArgs )
-import Network.DNS
-import Network.DNS.PollResolver ( toPTR )
+import Control.Monad            ( when, replicateM_ )
+import Control.Concurrent       ( forkIO )
+import Control.Concurrent.Chan  ( Chan, newChan, writeChan, readChan )
+import System.Environment       ( getArgs )
+import Network.Socket           ( inet_ntoa )
+import Foreign                  ( unsafePerformIO )
+import ADNS
 
 data CheckResult
-  = OK HostName RRAddr
-  | NotOK HostName RRAddr HostName
-  | DNSError String Answer
-  deriving (Show)
+  = OK HostName HostAddress
+  | NotOK HostName HostAddress HostName
+  | DNSError String
+
+showAddr :: HostAddress -> String
+showAddr = unsafePerformIO . inet_ntoa
+
+instance Show CheckResult where
+  showsPrec _ (OK h a)       = showString $ "OK: "   ++ h ++ " <-> " ++ showAddr a
+  showsPrec _ (NotOK h a h') = showString $ "FAIL: " ++ h ++ " -> "  ++ showAddr a ++ " -> " ++ h'
+  showsPrec _ (DNSError msg) = showString $ "ERR: " ++ msg
 
 main :: IO ()
 main = do
@@ -37,19 +44,17 @@ main = do
 
 ptrCheck :: Resolver -> Chan CheckResult -> HostName -> IO ()
 ptrCheck resolver chan host = do
-    a <- resolver host A [] >>= takeMVar
-    case a of
-      Answer _ _ _ _ [RRA addr@(RRAddr addr')] -> do
-        ptr <- resolver (toPTR addr') PTR [] >>= takeMVar
-        case ptr of
-          Answer _ _ _ _ [RRPTR name] ->
-            if (name == host)
-               then writeChan chan (OK host addr)
-               else writeChan chan (NotOK host addr name)
+  let returnError t = writeChan chan (DNSError (host ++ ": cannot resolve " ++ t))
+  a <- queryA resolver host
+  case a of
+    Just [addr] -> do
+      ptr <- queryPTR resolver addr
+      case ptr of
+        Just [name] | name == host -> writeChan chan (OK host addr)
+                    | otherwise    -> writeChan chan (NotOK host addr name)
+        _                          -> returnError "PTR"
+    _           -> returnError "A"
 
-          _ -> writeChan chan (DNSError (host++": can't resolve PTR:") ptr)
-
-      _ -> writeChan chan (DNSError (host++": can't resolve A:") a)
 
 
 -- ----- Configure Emacs -----

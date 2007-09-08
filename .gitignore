@@ -1,0 +1,6 @@
+*.hi
+*.o
+/.installed-pkg-config
+/.setup-config
+/ADNS/Base.hs
+/dist
