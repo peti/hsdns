@@ -5,7 +5,7 @@
 /ADNS/Base.hs
 /GNUmakefile
 /Setup.lhs
-/_darcs/*
+/_darcs
 /dist/*
 /docs/*
 /hsdns-*.tar.gz
