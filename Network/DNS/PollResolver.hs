@@ -22,13 +22,11 @@ import Control.Concurrent ( forkIO )
 import Control.Concurrent.MVar
 import Control.Monad      ( when )
 import Data.List          ( sortBy )
-import Foreign
-import Foreign.C
+import Data.Map ( Map )
+import qualified Data.Map as Map
 import Network            ( HostName )
-import Network.IP.Address
+import Network.Socket     ( HostAddress )
 import Network.DNS.ADNS
-import System.Posix.Poll
-import System.Posix.GetTimeOfDay
 
 -- * Resolver API
 
@@ -46,13 +44,9 @@ type Resolver = String -> RRType -> [QueryFlag] -> IO (MVar Answer)
 -- doing so defeats the purpose of an asynchronous resolver.
 
 initResolver :: [InitFlag] -> (Resolver -> IO a) -> IO a
-initResolver flags f = do
-  adnsInit flags $ \dns -> do
-    fds <- mallocForeignPtrArray initSize
-    mst <- newMVar (RState dns fds initSize [])
-    f (resolve mst)
-  where
-  initSize = 32
+initResolver flags f =
+  adnsInit flags $ \dns ->
+    newMVar (RState dns Map.empty) >>= f . resolve
 
 -- |Resolve a hostname's 'A' records.
 
@@ -71,7 +65,7 @@ resolveA resolver x = do
 
 resolvePTR :: Resolver -> HostAddress -> IO (Either Status [HostName])
 resolvePTR resolver x = do
-  Answer rc _ _ _ rs  <- resolver (ha2ptr x) PTR [] >>= takeMVar
+  Answer rc _ _ _ rs  <- resolver (toPTR x) PTR [] >>= takeMVar
   if rc /= sOK
      then return (Left rc)
      else return (Right [ addr | RRPTR addr <- rs  ])
@@ -127,6 +121,16 @@ dummyDNS :: Resolver
 dummyDNS host _ _ = newMVar
   (Answer sSYSTEMFAIL Nothing (Just host) (-1) [])
 
+-- |Print an IP host address as a string suitable for 'PTR' lookups.
+
+toPTR :: HostAddress -> String
+toPTR ha = shows b4 . ('.':) .
+           shows b3 . ('.':) .
+           shows b2 . ('.':) .
+           shows b1 $ ".in-addr.arpa."
+  where
+    (b1,b2,b3,b4) = readWord32 ha
+
 -- * Implementation
 
 -- |The internal state of the resolver is stored in an
@@ -134,10 +138,8 @@ dummyDNS host _ _ = newMVar
 -- any number of concurrent 'IO' threads.
 
 data ResolverState = RState
-  { adns     :: AdnsState               -- ^opaque ADNS state
-  , pollfds  :: ForeignPtr Pollfd       -- ^array for poll(2)
-  , capacity :: Int                     -- ^size of the array
-  , queries  :: [(Query, MVar Answer)]  -- ^currently open queries
+  { adns     :: AdnsState               -- ^ opaque ADNS state
+  , queries  :: Map Query (MVar Answer) -- ^ currently open queries
   }
 
 -- |Submit a DNS query to the resolver and check whether we
@@ -149,9 +151,9 @@ resolve :: MVar ResolverState -> Resolver
 resolve mst r rt qfs = modifyMVar mst $ \st -> do
   res <- newEmptyMVar
   q <- adnsSubmit (adns st) r rt qfs
-  when (null (queries st))
+  when (Map.null (queries st))
     (forkIO (resolveLoop mst) >> return ())
-  let st' = st { queries = (q,res):(queries st) }
+  let st' = st { queries = Map.insert q res (queries st) }
   return (st', res)
 
 -- |Loop until all open queries have been resolved. Uses
@@ -159,66 +161,14 @@ resolve mst r rt qfs = modifyMVar mst $ \st -> do
 
 resolveLoop :: MVar ResolverState -> IO ()
 resolveLoop mst = do
-  empty <- modifyMVar mst $ \(RState dns fds cap qs) -> do
-    res' <- mapM (checkQuery dns) qs
-    case [ x | Just x <- res' ] of
-      []  -> do adnsQueries dns >>= mapM_ adnsCancel
-                return ((RState dns fds cap []), True)
-      res -> return ((RState dns fds cap res), False)
-  when (not empty) (waitForIO >> resolveLoop mst)
-
-  where
-  checkQuery dns (q, mv) = do
-   res <- adnsCheck dns q
-   case res of
-     Just a  -> putMVar mv a >> return Nothing
-     Nothing -> return (Just (q, mv))
-
-  waitForIO = do
-    (nfds,to) <- beforePoll
-    when (nfds > 0) (doPoll nfds to >> afterPoll nfds)
-
-  beforePoll = do
-    b4 <- modifyMVar mst $ \st ->
-      withForeignPtr (pollfds st) $ \fds ->
-        alloca $ \nfds ->
-          alloca $ \to ->
-            alloca $ \now -> do
-              poke nfds (toEnum (capacity st))
-              poke to (-1)
-              getTimeOfDay now
-              rc <- adnsBeforePoll (adns st) fds nfds to now
-              n  <- peek nfds
-              tv <- peek to
-              if rc == 0 then return (st, (Right (n,tv))) else
-                if (Errno rc) == eRANGE then return (st, (Left n)) else
-                  fail ("adnsBeforePoll returned unknown value " ++ show rc)
-    case b4 of
-      Left  n -> allocFds (fromEnum n) >> beforePoll
-      Right x -> return x
-
-  doPoll nfds to = do
-    fds' <- withMVar mst (return . pollfds)
-    rc <- withForeignPtr fds' $ \fds ->
-            poll fds (toEnum (fromEnum nfds)) to
-    when (rc < 0) (throwErrno "PollResolver.doPoll failed")
-
-  afterPoll nfds =
-    withMVar mst $ \st ->
-      alloca $ \now ->
-        withForeignPtr (pollfds st) $ \fds -> do
-          getTimeOfDay now
-          adnsAfterPoll (adns st) fds nfds now
-
-  allocFds n = modifyMVar_ mst $ \st ->
-    if n <= capacity st then return st else do
-      let sizes  = iterate (*2) (capacity st)
-          (n':_) = dropWhile (<n) sizes
-      fds <- mallocForeignPtrArray n'
-      return st { pollfds  = fds
-                , capacity = n'
-                }
-
+  more <- modifyMVar mst $ \(RState dns qs) -> do
+    r <- adnsWait dns
+    case r of
+      Nothing    -> return (RState dns qs, False)
+      Just (q,a) -> do mv <- Map.lookup q qs
+                       putMVar mv a
+                       return (RState dns (Map.delete q qs), True)
+  when more (resolveLoop mst)
 
 -- ----- Configure Emacs -----
 --
