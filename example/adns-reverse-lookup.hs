@@ -1,14 +1,11 @@
--- Resolve a bunch of hostnames' A records, then resolve
--- those A-record's PTR records and check whether they
--- match. Do it all asynchronously. The results are printed
--- in the order the answers come in:
---
---   $ ghc -threaded --make test.hs -o test -ladns
---   $ ./test xyz.example.org ecrc.de www.example.com www.cryp.to
---   DNSError "xyz.example.org: can't resolve A:" nxdomain
---   NotOK "www.cryp.to" 195.234.152.69 "research.cryp.to"
---   NotOK "ecrc.de" 127.0.0.1 "localhost"
---   OK "www.example.com" 192.0.34.166
+{-
+    Resolve a bunch of hostnames' A records, then resolve those
+    A-record's PTR records and check whether they match. Do it
+    all asynchronously. The results are printed in the order the
+    answers come in.
+
+    TODO: handle hosts that have more than one A record
+-}
 
 module Main ( main ) where
 
@@ -17,30 +14,29 @@ import Control.Concurrent       ( forkIO )
 import Control.Concurrent.Chan  ( Chan, newChan, writeChan, readChan )
 import System.Environment       ( getArgs )
 import Network.Socket           ( inet_ntoa )
-import Foreign                  ( unsafePerformIO )
+import Data.List                ( elem )
 import ADNS
 
 data CheckResult
   = OK HostName HostAddress
-  | NotOK HostName HostAddress HostName
+  | NotOK HostName HostAddress [HostName]
   | DNSError String
 
-showAddr :: HostAddress -> String
-showAddr = unsafePerformIO . inet_ntoa
-
-instance Show CheckResult where
-  showsPrec _ (OK h a)       = showString $ "OK: "   ++ h ++ " <-> " ++ showAddr a
-  showsPrec _ (NotOK h a h') = showString $ "FAIL: " ++ h ++ " -> "  ++ showAddr a ++ " -> " ++ h'
-  showsPrec _ (DNSError msg) = showString $ "ERR: " ++ msg
+printResult :: CheckResult -> IO ()
+printResult (OK h a)       = do addr <- inet_ntoa a
+                                putStrLn $ "OK: "   ++ h ++ " <-> " ++ addr
+printResult (NotOK h a h') = do addr <- inet_ntoa a
+                                putStrLn $ "FAIL: " ++ h ++ " -> "  ++ addr ++ " -> " ++ show h'
+printResult (DNSError msg) = putStrLn $ "ERR: " ++ msg
 
 main :: IO ()
 main = do
   names <- getArgs
-  when (null names) (print "Usage: hostname [hostname ...]")
+  when (null names) (putStrLn "Usage: hostname [hostname ...]")
   initResolver [NoErrPrint, NoServerWarn] $ \resolver -> do
     rrChannel <- newChan :: IO (Chan CheckResult)
     mapM_ (\h -> forkIO (ptrCheck resolver rrChannel h)) names
-    replicateM_ (length names) (readChan rrChannel >>= print)
+    replicateM_ (length names) (readChan rrChannel >>= printResult)
 
 ptrCheck :: Resolver -> Chan CheckResult -> HostName -> IO ()
 ptrCheck resolver chan host = do
@@ -50,9 +46,9 @@ ptrCheck resolver chan host = do
     Just [addr] -> do
       ptr <- queryPTR resolver addr
       case ptr of
-        Just [name] | name == host -> writeChan chan (OK host addr)
-                    | otherwise    -> writeChan chan (NotOK host addr name)
-        _                          -> returnError "PTR"
+        Just names | host `elem` names -> writeChan chan (OK host addr)
+                   | otherwise         -> writeChan chan (NotOK host addr names)
+        _                              -> returnError "PTR"
     _           -> returnError "A"
 
 
