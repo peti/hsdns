@@ -1,23 +1,21 @@
-{-# OPTIONS -fffi -fglasgow-exts #-}
+{-# OPTIONS -fffi #-}
 {- |
-   Module      :  Network.DNS.ADNS
-   Copyright   :  (c) 2006-04-08 by Peter Simons
+   Module      :  ADNS.Base
+   Copyright   :  (c) 2007 by Peter Simons
    License     :  GPL2
 
    Maintainer  :  simons@cryp.to
    Stability   :  provisional
-   Portability :  Haskell 2-pre
+   Portability :  ForeignFunctionInterface
 
    This module provides bindings to GNU ADNS, a domain name
-   resolver library written in C. Its source code, among
-   other things, is available at
+   resolver library written in C. ADNS is available from
    <http://www.gnu.org/software/adns/>.
 
-   You will most likely not need this module directly;
-   "Network.DNS" provides a much nicer interface from the
-   Haskell world; this module contains mostly marshaling
-   code.
--}
+   You will most likely not need this module directly: "ADNS"
+   provides a simpler for the Haskell world; this module contains
+   mostly marshaling code.
+ -}
 
 module ADNS.Base where
 
@@ -33,10 +31,10 @@ import ADNS.Endian
 
 -- * Marshaled ADNS Data Types
 
-data OpaqueState
+data OpaqueState = OpaqueState
 type AdnsState = Ptr OpaqueState
 
-data OpaqueQuery
+data OpaqueQuery = OpaqueQuery
 type Query = Ptr OpaqueQuery
 
 data InitFlag
@@ -209,7 +207,7 @@ instance Storable RRAddr where
   poke _ _    = fail "poke is undefined for Network.DNS.ADNS.RRAddr"
   peek ptr'   = do
     let ptr = #{ptr adns_rr_addr, addr} ptr'
-    (t :: #{type sa_family_t}) <- #{peek struct sockaddr_in, sin_family} ptr
+    t <- #{peek struct sockaddr_in, sin_family} ptr :: IO #{type sa_family_t}
     if (t /= #{const AF_INET})
        then fail ("peek Network.DNS.ADNS.RRAddr: unsupported 'sockaddr' type " ++ show t)
        else #{peek struct sockaddr_in, sin_addr} ptr >>= return . RRAddr
@@ -244,7 +242,7 @@ instance Storable RRHostAddr where
     h <- #{peek adns_rr_hostaddr, host} ptr
     hstr <- assert (h /= nullPtr) (peekCString h)
     st <- #{peek adns_rr_hostaddr, astatus} ptr
-    (nadr :: #{type adns_status}) <- #{peek adns_rr_hostaddr, naddrs} ptr
+    nadr <- #{peek adns_rr_hostaddr, naddrs} ptr :: IO #{type adns_status}
     aptr <- #{peek adns_rr_hostaddr, addrs} ptr
     adrs <- if (nadr > 0)
                 then peekArray (fromEnum nadr) aptr
@@ -266,7 +264,7 @@ instance Storable RRIntHostAddr where
     alignment _  = alignment (undefined :: CInt)
     poke _ _     = fail "poke is undefined for Network.DNS.ADNS.RRIntHostAddr"
     peek ptr     = do
-      (i::CInt) <- #{peek adns_rr_inthostaddr, i} ptr
+      i <- #{peek adns_rr_inthostaddr, i} ptr :: IO CInt
       a <- #{peek adns_rr_inthostaddr, ha} ptr
       return (RRIntHostAddr (fromEnum i) a)
 
@@ -301,8 +299,8 @@ instance Storable Answer where
     ow <- #{peek adns_answer, owner} ptr >>= maybePeek peekCString
     et <- #{peek adns_answer, expires} ptr
     rt <- #{peek adns_answer, type} ptr
-    (rs :: CInt) <- #{peek adns_answer, nrrs} ptr
-    (sz :: CInt) <- #{peek adns_answer, rrsz} ptr
+    rs <- #{peek adns_answer, nrrs} ptr :: IO CInt
+    sz <- (#{peek adns_answer, rrsz} ptr) :: IO CInt
     rrsp <- #{peek adns_answer, rrs} ptr
     r <- peekResp rt rrsp (fromEnum sz) (fromEnum rs)
     return Answer
