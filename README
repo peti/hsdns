@@ -8,21 +8,21 @@ Synopsis
 --------
 
   This library provides an asynchronous DNS resolver on top of
-  the `GNU ADNS library`_. Not all options are supported as of
-  now, but you can do A, MX, and PTR lookups. It has been tested
-  with ADNS versions 1.0 and 1.1. Build instructions for Cabal_
-  are included.
+  the `GNU ADNS library`_. Not all options are supported, but A,
+  MX, and PTR lookups work fine. The code has been been tested
+  with ADNS versions 1.0 to 1.4.
 
   The example program adns-reverse-lookup.hs_ demonstrates how
-  the resolver can be used. Given a list of host names on the
-  command line, It performs an A/PTR double-lookup and checks
-  whether the records are consistent::
+  the resolver is used. Given a list of host names on the command
+  line, it performs an A/PTR double-lookup and checks whether the
+  records are consistent. The output is printed in the order in
+  which the DNS responses arrive::
 
     $ ./adns-reverse-lookup xyz.example.org ecrc.de www.example.com www.cryp.to
-    DNSError "xyz.example.org: can't resolve A:" nxdomain
-    NotOK "www.cryp.to" 195.234.152.69 "research.cryp.to"
-    NotOK "ecrc.de" 127.0.0.1 "localhost"
-    OK "www.example.com" 192.0.34.166
+    OK: www.example.com <-> 208.77.188.166
+    ERR: xyz.example.org: cannot resolve A
+    FAIL: www.cryp.to -> 195.234.152.69 -> ["research.cryp.to"]
+    FAIL: ecrc.de -> 127.0.0.1 -> ["localhost"]
 
 Documentation
 -------------
