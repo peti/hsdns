@@ -21,13 +21,12 @@
 
 module Network.DNS.ADNS where
 
-import Control.Exception ( assert, bracket )
+import Control.Exception        ( assert, bracket )
+import Network                  ( HostName )
+import Network.Socket           ( HostAddress )
 import Foreign
 import Foreign.C
-import Network            ( HostName )
-import Network.IP.Address
-import System.Posix.Poll
-import System.Posix.GetTimeOfDay
+import Data.Endian
 
 #include <adns.h>
 #include <errno.h>
@@ -202,7 +201,7 @@ instance Show RRAddr where
                      shows b3 . ('.':) .
                      shows b4 $ ""
     where
-    (b1,b2,b3,b4) = ha2tpl ha
+    (b1,b2,b3,b4) = readWord32 ha
 
 instance Storable RRAddr where
   sizeOf _    = #{size adns_rr_addr}
@@ -410,9 +409,36 @@ adnsCheck st q =
                             s <- peekCString p
                             fail ("adnsCheck: " ++ s)
 
+-- |Wait for a response to arrive. The returned 'Query' is
+-- invalid and must not be passed to ADNS again. If 'Nothing' is
+-- returned, the resolver is empty.
+
+adnsWait :: AdnsState -> IO (Maybe (Query,Answer))
+adnsWait st =
+  alloca $ \qPtr ->
+    alloca $ \aPtr -> do
+      poke qPtr nullPtr
+      poke aPtr nullPtr
+      rc <- adns_wait st qPtr aPtr nullPtr
+      case rc of
+        0              -> do q <- peek qPtr
+                             a' <- peek aPtr
+                             a <- peek a'
+                             free a'
+                             return (Just (q,a))
+        #{const ESRCH} -> return Nothing
+        _              -> do p <- adns_strerror rc
+                             s <- peekCString p
+                             fail ("adnsWait: " ++ s)
+
 -- |Cancel an open 'Query'.
 
 foreign import ccall unsafe "adns_cancel" adnsCancel :: Query -> IO ()
+
+-- |Wait for the next 'Query' to become available.
+
+foreign import ccall safe adns_wait ::
+  AdnsState -> Ptr Query -> Ptr (Ptr Answer) -> Ptr (Ptr a) -> IO CInt
 
 -- |Return the list of all currently open queries.
 
@@ -423,62 +449,6 @@ adnsQueries st = adns_forallqueries_begin st >> walk
                        then walk >>= return . ((:) q)
                        else return []
 
--- |Find out which file descriptors ADNS is interested in
--- and when it would like to be able to time things out.
--- This is in a form suitable for use with 'poll'.
---
--- On entry, @fds@ should point to at least @*nfds_io@
--- structs. ADNS will fill up to that many structs with
--- information for @poll@, and record in @*nfds_io@ how many
--- entries it actually used. If the array is too small,
--- @*nfds_io@ will be set to the number required and
--- 'adnsBeforePoll' will return 'eRANGE'.
---
--- You may call 'adnsBeforePoll' with @fds=='nullPtr'@ and
--- @*nfds_io==0@, in which case ADNS will fill in the number
--- of fds that it might be interested in into @*nfds_io@ and
--- return either 0 (if it is not interested in any fds) or
--- 'eRANGE' (if it is).
---
--- Note that (unless @now@ is 0) ADNS may acquire additional
--- fds from one call to the next, so you must put
--- adns_beforepoll in a loop, rather than assuming that the
--- second call (with the buffer size requested by the first)
--- will not return 'eRANGE'.
---
--- ADNS only ever sets 'PollIn', 'PollOut' and 'PollPri' in
--- its 'Pollfd' structs, and only ever looks at those bits.
--- 'PollPri' is required to detect TCP Urgent Data (which
--- should not be used by a DNS server) so that ADNS can know
--- that the TCP stream is now useless.
---
--- In any case, @*timeout_io@ should be a timeout value as
--- for 'poll', which ADNS will modify downwards as required.
--- If the caller does not plan to block, then @*timeout_io@
--- should be 0 on entry. Alternatively, @timeout_io@ may be
--- 0.
---
--- 'adnsBeforePoll' will return 0 on success, and will not
--- fail for any reason other than the fds buffer being too
--- small (ERANGE).
---
--- This call will never actually do any I\/O. If you supply
--- the current time it will not change the fds that ADNS is
--- using or the timeouts it wants.
---
--- In any case this call won't block.
-
-foreign import ccall unsafe "adns_beforepoll" adnsBeforePoll ::
-  AdnsState -> Ptr Pollfd -> Ptr CInt -> Ptr CInt -> Ptr Timeval
-  -> IO CInt
-
--- |Gives ADNS flow-of-control for a bit; intended for use
--- after 'poll'. @fds@ and @nfds@ should be the results from
--- 'poll'. 'Pollfd' structs mentioning fds not belonging to
--- adns will be ignored.
-
-foreign import ccall unsafe "adns_afterpoll" adnsAfterPoll ::
-  AdnsState -> Ptr Pollfd -> CInt -> Ptr Timeval -> IO ()
 
 -- |Map a 'Status' code to a human-readable error
 -- description. For example:
@@ -569,9 +539,21 @@ wrapAdns m acc  = alloca $ \resP -> do
 mkFlags :: Enum a => [a] -> CInt
 mkFlags = toEnum . sum . map fromEnum
 
+readWord32 :: Word32 -> (Word8, Word8, Word8, Word)
+readWord32 n =
+  let (b1,n1) = (n  .&. 255, n  `shiftR` 8)
+      (b2,n2) = (n1 .&. 255, n1 `shiftR` 8)
+      (b3,n3) = (n2 .&. 255, n2 `shiftR` 8)
+      b4      = n3 .&. 255
+  in
+  case endian of
+    BigEndian    -> (fromIntegral b4, fromIntegral b3, fromIntegral b2, fromIntegral b1)
+    LittleEndian -> (fromIntegral b1, fromIntegral b2, fromIntegral b3, fromIntegral b4)
+    PDPEndian    -> (fromIntegral b4, fromIntegral b3, fromIntegral b1, fromIntegral b2)
+
 
 -- ----- Configure Emacs -----
 --
 -- Local Variables: ***
--- haskell-program-name: "ghci -ladns -lcrypto" ***
+-- haskell-program-name: "ghci -ladns" ***
 -- End: ***
