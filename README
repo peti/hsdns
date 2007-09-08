@@ -9,9 +9,9 @@ Synopsis
 
   This library provides an asynchronous DNS resolver on top of
   the `GNU ADNS library`_. Not all options are supported as of
-  now, but you can do A, MX, NS, and PTR lookups. It has been
-  tested with ADNS versions 1.0 and 1.1. Build instructions for
-  Cabal_ are included.
+  now, but you can do A, MX, and PTR lookups. It has been tested
+  with ADNS versions 1.0 and 1.1. Build instructions for Cabal_
+  are included.
 
   The example program adns-reverse-lookup.hs_ demonstrates how
   the resolver can be used. Given a list of host names on the
