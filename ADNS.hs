@@ -1,5 +1,5 @@
 {- |
-   Module      :  Network.DNS
+   Module      :  ADNS
    Copyright   :  (c) 2007 Peter Simons
    License     :  LGPL
 
@@ -7,10 +7,11 @@
    Stability   :  provisional
    Portability :  portable
 
-   An asynchronous DNS resolver. You should link your program
-   with the /threaded/ runtime-system when using this module. In
-   GHC, this is accomplished by specifying @-threaded@ on the
-   command-line.
+   An asynchronous DNS resolver based on GNU ADNS
+   <http://www.gnu.org/software/adns/>. You should link your
+   program with the /threaded/ runtime-system when using this
+   module. In GHC, this is accomplished by specifying @-threaded@
+   on the command-line.
 -}
 
 module ADNS

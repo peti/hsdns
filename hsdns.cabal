@@ -1,9 +1,11 @@
 Name:			hsdns
 Version:		1.0
 Author:			Peter Simons <simons@cryp.to>
+Maintainer:		simons@cryp.to
 License:		LGPL
 Homepage:		http://cryp.to/hsdns/
-Description:		Asynchronous DNS Resolver
+Synopsis:		Asynchronous DNS Resolver
+Description:		An asynchronous DNS resolver based on GNU ADNS.
 Category:		Foreign, Network
 Build-Depends:		base, network
 Extensions:		ForeignFunctionInterface
