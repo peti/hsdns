@@ -54,4 +54,4 @@ Copyleft
 
 .. _hsdns-1.0.tar.gz: http://cryp.to/hsdns/hsdns-1.0.tar.gz
 
-.. _adns-reverse-lookup.hs: exapmle/adns-reverse-lookup.hs
+.. _adns-reverse-lookup.hs: example/adns-reverse-lookup.hs
