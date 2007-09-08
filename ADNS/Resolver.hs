@@ -7,13 +7,9 @@
    Stability   :  provisional
    Portability :  portable
 
-   This module provides a 'poll'-based I\/O scheduler for
-   "Network.DNS.ADNS". See the @test.hs@ program included in
-   the distribution for an example of how to use this
-   resolver. Link your program with the /threaded/
-   runtime-system when you use this module. In GHC, this is
-   accomplished by specifying @-threaded@ on the
-   command-line.
+   This module implements a Haskell DNS Resolver on top of the
+   ADNS library. GHC users should compile their code using the
+   @-threaded@ runtime system.
  -}
 
 module ADNS.Resolver
