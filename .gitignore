@@ -3,4 +3,10 @@
 /.installed-pkg-config
 /.setup-config
 /ADNS/Base.hs
-/dist
+/GNUmakefile
+/Setup.lhs
+/_darcs/*
+/dist/*
+/docs/*
+/hsdns-*.tar.gz
+/index.html
