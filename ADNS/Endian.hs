@@ -4,7 +4,7 @@
    License     :  LGPL
 
    Maintainer  :  simons@cryp.to
-   Stability   :  stable
+   Stability   :  provisional
    Portability :  portable
 
    Determine the machine's endian.
