@@ -1,16 +1,16 @@
 {- |
    Module      :  Data.Endian
-   Copyright   :  (c) 2006-04-08 by Peter Simons
-   License     :  GPL2
+   Copyright   :  (c) 2007 Peter Simons
+   License     :  LGPL
 
    Maintainer  :  simons@cryp.to
    Stability   :  stable
    Portability :  portable
 
-   Find out the machine's endian at runtime.
+   Determine the machine's endian.
 -}
 
-module Data.Endian ( Endian(..), ourEndian ) where
+module Data.Endian ( Endian(..), endian ) where
 
 import Foreign
 
@@ -25,9 +25,9 @@ data Endian
 
 -- |The endian of this machine, determined at run-time.
 
-{-# NOINLINE ourEndian #-}
-ourEndian :: Endian
-ourEndian =
+{-# NOINLINE endian #-}
+endian :: Endian
+endian =
   unsafePerformIO $
     allocaArray (sizeOf (undefined :: Word32)) $ \p -> do
       let val = 0x01020304 :: Word32
