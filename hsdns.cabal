@@ -16,7 +16,6 @@ Exposed-Modules:	ADNS,
 			ADNS.Endian,
 			ADNS.Resolver
 GHC-Options:		-O -Wall
-
 Data-Files:		README, prologue.txt
 
 Executable:		adns-reverse-lookup
