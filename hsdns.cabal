@@ -23,3 +23,9 @@ Hs-Source-Dirs:		example, .
 Main-Is:		adns-reverse-lookup.hs
 Extra-Libraries:	adns
 GHC-Options:		-O -Wall -threaded
+
+Executable:		adns-test-and-traverse
+Hs-Source-Dirs:		example, .
+Main-Is:		adns-test-and-traverse.hs
+Extra-Libraries:	adns
+GHC-Options:		-O -Wall -threaded

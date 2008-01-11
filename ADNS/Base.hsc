@@ -22,6 +22,7 @@ module ADNS.Base where
 import Control.Exception        ( assert, bracket )
 import Network                  ( HostName )
 import Network.Socket           ( HostAddress )
+import Data.Bits ()
 import Foreign
 import Foreign.C
 import ADNS.Endian
@@ -110,20 +111,43 @@ instance Enum QueryFlag where
 
 -- |The record types we support.
 
-data RRType = A | MX | NS | PTR
-  deriving (Eq, Bounded, Show)
+data RRType = A | CNAME | MX | NS | PTR
+            | NSEC
+            | RRType Int
+  deriving (Read)
+
+instance Eq RRType where
+  a == b = fromEnum a == fromEnum b
+
+instance Show RRType where
+  showsPrec _ x = case toEnum $ fromEnum x of  -- canonify
+                   A          -> showString "A"
+                   CNAME      -> showString "CNAME"
+                   MX         -> showString "MX"
+                   NS         -> showString "NS"
+                   PTR        -> showString "PTR"
+                   NSEC       -> showString "NSEC"
+                   (RRType i) -> showString "TYPE" . shows i
 
 instance Enum RRType where
   toEnum #{const adns_r_a}   = A
+  toEnum #{const adns_r_cname} = CNAME
   toEnum #{const adns_r_mx}  = MX
   toEnum #{const adns_r_ns}  = NS
   toEnum #{const adns_r_ptr} = PTR
-  toEnum i = error ("Network.DNS.ADNS.RRType cannot be mapped to value " ++ show i)
+  toEnum x = case x .&. #{const adns_rrt_typemask} of
+      	 47 -> NSEC
+	 i  -> RRType i
 
   fromEnum A   = #{const adns_r_a}
+  fromEnum CNAME = #{const adns_r_cname}
   fromEnum MX  = #{const adns_r_mx}
   fromEnum NS  = #{const adns_r_ns}
   fromEnum PTR = #{const adns_r_ptr}
+  fromEnum x = #{const adns_r_unknown} .|. case x of
+   	   NSEC       -> 47
+  	   (RRType i) -> i
+	   _	      -> error "Missing case in fromEnum ADNS.Base.RRType"
 
 instance Storable RRType where
   sizeOf _     = #{size adns_rrtype}
@@ -268,11 +292,29 @@ instance Storable RRIntHostAddr where
       a <- #{peek adns_rr_inthostaddr, ha} ptr
       return (RRIntHostAddr (fromEnum i) a)
 
+-- |Original definition:
+--
+-- >    typedef struct {
+-- >      int len;
+-- >      unsigned char *data;
+-- >    } adns_rr_byteblock;
+
+data RRByteblock = RRByteblock Int (Ptr CChar)
+
+instance Storable RRByteblock where
+    sizeOf _     = #{size adns_rr_byteblock}
+    alignment _  = alignment (undefined :: CInt)
+    poke _ _     = fail "poke is undefined for Network.DNS.ADNS.RRByteblock"
+    peek ptr     = do
+      l <- #{peek adns_rr_byteblock, len } ptr :: IO CInt
+      p <- #{peek adns_rr_byteblock, data} ptr
+      return (RRByteblock (fromEnum l) p)
+
 data Answer = Answer
   { status  :: Status
       -- ^ Status code for this query.
   , cname   :: Maybe String
-      -- ^ Always 'Nothing' for @CNAME@ queries (which are not supported yet anyway).
+      -- ^ Always 'Nothing' for @CNAME@ queries
   , owner   :: Maybe String
       -- ^ Only set if 'Owner' was requested for query.
   , expires :: CTime
@@ -284,9 +326,12 @@ data Answer = Answer
 
 data Response
   = RRA RRAddr
+  | RRCNAME String
   | RRMX Int RRHostAddr
   | RRNS RRHostAddr
   | RRPTR String
+  | RRNSEC String
+  | RRUNKNOWN String
   deriving (Show)
 
 instance Storable Answer where
@@ -320,7 +365,7 @@ instance Storable Answer where
 peekResp :: RRType -> Ptr b -> Int -> Int -> IO [Response]
 peekResp _ _ _ 0      = return []
 peekResp rt ptr off n = do
-  r <- parseByType rt
+  r <- parseByType (toEnum $ fromEnum rt)
   rs <- peekResp rt (ptr `plusPtr` off) off (n-1)
   return (r:rs)
 
@@ -330,6 +375,30 @@ peekResp rt ptr off n = do
   parseByType PTR = peek (castPtr ptr) >>= peekCString >>= return . RRPTR
   parseByType MX  = do (RRIntHostAddr i addr) <- peek (castPtr ptr)
                        return (RRMX i addr)
+  parseByType CNAME = peek (castPtr ptr) >>= peekCString >>= return . RRCNAME
+  parseByType NSEC = do RRByteblock len rptr <- peek (castPtr ptr)
+                        (name, _) <- peekFQDNAndAdvance rptr len
+  	      	     	return $ RRNSEC name
+  parseByType (RRType _) = do RRByteblock len rptr <- peek (castPtr ptr)
+                              str <- peekCStringLen (rptr, len)
+                              return $ RRUNKNOWN str
+
+
+-- |This function parses a FQDN in uncompressed wire format and advances
+-- the pointer to the next byte after the parsed name.
+
+peekFQDNAndAdvance :: Ptr a -> Int -> IO (String, Ptr a)
+peekFQDNAndAdvance ptr _ = do
+  cc <- peek (castPtr ptr :: Ptr CChar)
+  let ptr1 = ptr `plusPtr` 1
+  case fromEnum cc of
+    c | c == 0 -> return ("", ptr1)
+      | c < 64 -> do name <- peekCStringLen (castPtr ptr1, c)
+    	       	     (zone, ptr2) <- peekFQDNAndAdvance (ptr1 `plusPtr` c) 0
+		     return (name ++ "." ++ zone, ptr2)
+      | otherwise -> error "Compressed FQDN must not occur here."
+
+
 
 -- * ADNS Library Functions
 
