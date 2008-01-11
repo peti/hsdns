@@ -1,6 +1,6 @@
 {- |
    Module      :  ADNS.Resolver
-   Copyright   :  (c) 2007 Peter Simons
+   Copyright   :  (c) 2008 Peter Simons
    License     :  LGPL
 
    Maintainer  :  simons@cryp.to

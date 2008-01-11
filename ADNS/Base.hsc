@@ -1,8 +1,8 @@
 {-# OPTIONS -fffi #-}
 {- |
    Module      :  ADNS.Base
-   Copyright   :  (c) 2007 by Peter Simons
-   License     :  GPL2
+   Copyright   :  (c) 2008 by Peter Simons
+   License     :  LGPL
 
    Maintainer  :  simons@cryp.to
    Stability   :  provisional
@@ -13,8 +13,8 @@
    <http://www.gnu.org/software/adns/>.
 
    You will most likely not need this module directly: "ADNS"
-   provides a simpler for the Haskell world; this module contains
-   mostly marshaling code.
+   provides a simpler API for the Haskell world; this module
+   contains mostly marshaling code.
  -}
 
 module ADNS.Base where
@@ -22,7 +22,6 @@ module ADNS.Base where
 import Control.Exception        ( assert, bracket )
 import Network                  ( HostName )
 import Network.Socket           ( HostAddress )
-import Data.Bits ()
 import Foreign
 import Foreign.C
 import ADNS.Endian
