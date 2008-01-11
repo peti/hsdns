@@ -1,7 +1,7 @@
 An asynchronous DNS resolver for Haskell_
 =========================================
 
-:Latest Release: hsdns-1.0.tar.gz_
+:Latest Release: hsdns-1.0-beta-1.tar.gz_
 :Darcs:          darcs_ get http://cryp.to/hsdns/
 
 Synopsis
@@ -9,8 +9,12 @@ Synopsis
 
   This library provides an asynchronous DNS resolver on top of
   the `GNU ADNS library`_. Not all options are supported, but A,
-  MX, and PTR lookups work fine. The code has been been tested
-  with ADNS versions 1.0 to 1.4.
+  MX, and PTR lookups work nicely. Courtesy of Lutz Donnerhacke
+  <lutz@iks-jena.de>, there is also support for retrieving
+  generic RR types, CNAMEs, and for NSEC zone walking. The
+  library can be expected to work with fine ADNS 1.4 or later. It
+  might also work with version ADNS 1.3, but that hasn't been
+  tested.
 
   The example program adns-reverse-lookup.hs_ demonstrates how
   the resolver is used. Given a list of host names on the command
@@ -33,7 +37,7 @@ Documentation
 Copyleft
 --------
 
-  Copyright (c) 2007 Peter Simons <simons@cryp.to>. All rights
+  Copyright (c) 2008 Peter Simons <simons@cryp.to>. All rights
   reserved. This software is released under the terms of the `GNU
   Lesser General Public License
   <http://www.gnu.org/licenses/lgpl.html>`_.
@@ -52,6 +56,6 @@ Copyleft
 
 .. _Reference Documentation: docs/index.html
 
-.. _hsdns-1.0.tar.gz: http://cryp.to/hsdns/hsdns-1.0.tar.gz
+.. _hsdns-1.0-beta-1.tar.gz: http://cryp.to/hsdns/hsdns-1.0-beta-1.tar.gz
 
 .. _adns-reverse-lookup.hs: example/adns-reverse-lookup.hs
