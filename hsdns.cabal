@@ -6,10 +6,10 @@ Maintainer:		simons@cryp.to
 License:		LGPL
 Homepage:		http://cryp.to/hsdns/
 Synopsis:		Asynchronous DNS Resolver
-Description:		An asynchronous DNS resolver based on GNU ADNS.
+Description:		Asynchronous DNS Resolver; requires GNU ADNS to be installed.
 Category:		Foreign, Network
 Build-Depends:		base, network
-Extensions:		ForeignFunctionInterface
+Extensions:		ForeignFunctionInterface, EmptyDataDecls
 Extra-Libraries:	adns
 Includes:		"adns.h", "errno.h"
 Exposed-Modules:	ADNS,
