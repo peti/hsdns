@@ -1,4 +1,4 @@
-{-# OPTIONS -fffi #-}
+{-# LANGUAGE ForeignFunctionInterface, EmptyDataDecls #-}
 {- |
    Module      :  ADNS.Base
    Copyright   :  (c) 2008 by Peter Simons
@@ -31,10 +31,10 @@ import ADNS.Endian
 
 -- * Marshaled ADNS Data Types
 
-data OpaqueState = OpaqueState
+data OpaqueState
 type AdnsState = Ptr OpaqueState
 
-data OpaqueQuery = OpaqueQuery
+data OpaqueQuery
 type Query = Ptr OpaqueQuery
 
 data InitFlag
