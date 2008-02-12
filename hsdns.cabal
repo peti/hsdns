@@ -1,32 +1,32 @@
-Name:			hsdns
-Version:		1.1
-Author:			Peter Simons <simons@cryp.to>,
-			Lutz Donnerhacke <lutz@iks-jena.de>
-Maintainer:		simons@cryp.to
-License:		LGPL
-Homepage:		http://cryp.to/hsdns/
-Synopsis:		Asynchronous DNS Resolver
-Description:		Asynchronous DNS Resolver; requires GNU ADNS to be installed.
-Category:		Foreign, Network
-Build-Depends:		base, network
-Extensions:		ForeignFunctionInterface, EmptyDataDecls
-Extra-Libraries:	adns
-Includes:		"adns.h", "errno.h"
-Exposed-Modules:	ADNS,
-			ADNS.Base,
-			ADNS.Endian,
-			ADNS.Resolver
-GHC-Options:		-O -Wall
-Data-Files:		README, prologue.txt
+Name:                   hsdns
+Version:                1.2
+Author:                 Peter Simons <simons@cryp.to>,
+                        Lutz Donnerhacke <lutz@iks-jena.de>
+Maintainer:             simons@cryp.to
+License:                LGPL
+Homepage:               http://cryp.to/hsdns/
+Synopsis:               Asynchronous DNS Resolver
+Description:            Asynchronous DNS Resolver; requires GNU ADNS to be installed.
+Category:               Foreign, Network
+Build-Depends:          base, network
+Extensions:             ForeignFunctionInterface, EmptyDataDecls
+Extra-Libraries:        adns
+Includes:               "adns.h", "errno.h"
+Exposed-Modules:        ADNS,
+                        ADNS.Base,
+                        ADNS.Endian,
+                        ADNS.Resolver
+GHC-Options:            -O -Wall
+Data-Files:             README, prologue.txt
 
-Executable:		adns-reverse-lookup
-Hs-Source-Dirs:		example, .
-Main-Is:		adns-reverse-lookup.hs
-Extra-Libraries:	adns
-GHC-Options:		-O -Wall -threaded
+Executable:             adns-reverse-lookup
+Hs-Source-Dirs:         example, .
+Main-Is:                adns-reverse-lookup.hs
+Extra-Libraries:        adns
+GHC-Options:            -O -Wall -threaded
 
-Executable:		adns-test-and-traverse
-Hs-Source-Dirs:		example, .
-Main-Is:		adns-test-and-traverse.hs
-Extra-Libraries:	adns
-GHC-Options:		-O -Wall -threaded
+Executable:             adns-test-and-traverse
+Hs-Source-Dirs:         example, .
+Main-Is:                adns-test-and-traverse.hs
+Extra-Libraries:        adns
+GHC-Options:            -O -Wall -threaded
