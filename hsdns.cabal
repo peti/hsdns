@@ -17,7 +17,7 @@ Exposed-Modules:        ADNS,
                         ADNS.Base,
                         ADNS.Endian,
                         ADNS.Resolver
-GHC-Options:            -O -Wall
+GHC-Options:            -Wall
 Data-Files:             README, prologue.txt
 Build-Type:             Simple
 
