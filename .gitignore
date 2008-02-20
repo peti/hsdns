@@ -3,7 +3,9 @@
 /.installed-pkg-config
 /.setup-config
 /ADNS/Base.hs
+/COPYING
 /GNUmakefile
+/Setup
 /Setup.lhs
 /_darcs
 /dist/*
