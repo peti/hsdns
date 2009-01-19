@@ -26,7 +26,7 @@ import Control.Concurrent ( forkIO )
 import Control.Concurrent.MVar
 import Control.Monad      ( when )
 import Data.List          ( sortBy )
-import Data.Map ( Map )
+import Data.Map           ( Map )
 import qualified Data.Map as Map
 import Network            ( HostName )
 import Network.Socket     ( HostAddress )
@@ -166,7 +166,7 @@ resolveLoop mst = do
     r <- adnsWait dns
     case r of
       Nothing    -> return (RState dns qs, False)
-      Just (q,a) -> do mv <- Map.lookup q qs
+      Just (q,a) -> do mv <- maybe (fail "inconsistent ADNS state") return (Map.lookup q qs)
                        putMVar mv a
                        return (RState dns (Map.delete q qs), True)
   when more (resolveLoop mst)
