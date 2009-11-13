@@ -10,7 +10,7 @@ Homepage:               http://cryp.to/hsdns/
 Synopsis:               Asynchronous DNS Resolver
 Description:            Asynchronous DNS Resolver; requires GNU ADNS to be installed.
 Category:               Foreign, Network
-Build-Depends:          base, network, containers
+Build-Depends:          base >=3.0.0.0 && <4.2.0.0, network, containers
 Extensions:             ForeignFunctionInterface, EmptyDataDecls
 Extra-Libraries:        adns
 Includes:               "adns.h", "errno.h"
