@@ -2,6 +2,7 @@ Name:                   hsdns
 Version:                1.4.1
 Author:                 Peter Simons <simons@cryp.to>,
                         Lutz Donnerhacke <lutz@iks-jena.de>
+                        Григорий Холомьёв <omever@gmail.com>
 Maintainer:             Peter Simons <simons@cryp.to>
 License:                LGPL
 License-File:           COPYING
