@@ -112,6 +112,7 @@ instance Enum QueryFlag where
 
 data RRType = A | CNAME | MX | NS | PTR
             | NSEC
+            | SRV
             | RRType Int
   deriving (Read)
 
@@ -126,6 +127,7 @@ instance Show RRType where
                    NS         -> showString "NS"
                    PTR        -> showString "PTR"
                    NSEC       -> showString "NSEC"
+                   SRV        -> showString "SRV"
                    (RRType i) -> showString "TYPE" . shows i
 
 instance Enum RRType where
@@ -134,6 +136,7 @@ instance Enum RRType where
   toEnum #{const adns_r_mx}  = MX
   toEnum #{const adns_r_ns}  = NS
   toEnum #{const adns_r_ptr} = PTR
+  toEnum #{const adns_r_srv} = SRV
   toEnum x = case x .&. #{const adns_rrt_typemask} of
       	 47 -> NSEC
 	 i  -> RRType i
@@ -143,6 +146,7 @@ instance Enum RRType where
   fromEnum MX  = #{const adns_r_mx}
   fromEnum NS  = #{const adns_r_ns}
   fromEnum PTR = #{const adns_r_ptr}
+  fromEnum SRV = #{const adns_r_srv}
   fromEnum x = #{const adns_r_unknown} .|. case x of
    	   NSEC       -> 47
   	   (RRType i) -> i
@@ -309,6 +313,26 @@ instance Storable RRByteblock where
       p <- #{peek adns_rr_byteblock, data} ptr
       return (RRByteblock (fromEnum l) p)
 
+-- |Original definition:
+--
+-- >    typedef struct {
+-- >      int priority, weight, port;
+-- >      char *host;
+-- >    } adns_rr_srvraw;
+
+data RRSrvRaw = RRSrvRaw Int Int Int (Ptr CChar)
+
+instance Storable RRSrvRaw where
+    sizeOf _     = #{size adns_rr_srvraw}
+    alignment _  = alignment (undefined :: CInt)
+    poke _ _     = fail "poke is undefined for Network.DNS.ADNS.RRSrvRaw"
+    peek ptr     = do
+      pr <- #{peek adns_rr_srvraw, priority} ptr :: IO CInt
+      w <- #{peek adns_rr_srvraw, weight} ptr :: IO CInt
+      po <- #{peek adns_rr_srvraw, port} ptr :: IO CInt
+      h <- #{peek adns_rr_srvraw, host} ptr
+      return (RRSrvRaw (fromEnum pr) (fromEnum w) (fromEnum po) h)
+
 data Answer = Answer
   { status  :: Status
       -- ^ Status code for this query.
@@ -331,6 +355,7 @@ data Response
   | RRPTR String
   | RRNSEC String
   | RRUNKNOWN String
+  | RRSRV Int Int Int String
   deriving (Show)
 
 instance Storable Answer where
@@ -372,6 +397,9 @@ peekResp rt ptr off n = do
   parseByType A   = peek (castPtr ptr) >>= return . RRA . RRAddr
   parseByType NS  = peek (castPtr ptr) >>= return . RRNS
   parseByType PTR = peek (castPtr ptr) >>= peekCString >>= return . RRPTR
+  parseByType SRV = do (RRSrvRaw prio weight port host) <- peek (castPtr ptr)
+                       host' <- peekCString host
+                       return (RRSRV prio weight port host')
   parseByType MX  = do (RRIntHostAddr i addr) <- peek (castPtr ptr)
                        return (RRMX i addr)
   parseByType CNAME = peek (castPtr ptr) >>= peekCString >>= return . RRCNAME

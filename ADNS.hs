@@ -17,18 +17,22 @@
 module ADNS
   ( HostName, HostAddress
   , Resolver, initResolver, InitFlag(..)
-  , queryA, queryPTR, queryMX
+  , queryA, queryPTR, queryMX, querySRV
   , dummyDNS
   )
   where
 
-import Network           ( HostName )
+import Network           ( HostName, PortID )
 import Network.Socket    ( HostAddress )
 import ADNS.Base
 import ADNS.Resolver
 
 queryA :: Resolver -> HostName -> IO (Maybe [HostAddress])
 queryA = query resolveA
+
+-- | For quering SRV records. Result is the list of tuples (host, port)
+querySRV :: Resolver -> HostName -> IO (Maybe [(HostName, PortID)])
+querySRV = query resolveSRV
 
 queryPTR :: Resolver -> HostAddress -> IO (Maybe [HostName])
 queryPTR = query resolvePTR

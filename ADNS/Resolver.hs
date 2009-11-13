@@ -16,7 +16,7 @@ module ADNS.Resolver
   ( Resolver
   , initResolver
   , toPTR
-  , resolveA, resolvePTR, resolveMX
+  , resolveA, resolvePTR, resolveMX, resolveSRV
   , query
   , dummyDNS
   )
@@ -28,7 +28,7 @@ import Control.Monad      ( when )
 import Data.List          ( sortBy )
 import Data.Map           ( Map )
 import qualified Data.Map as Map
-import Network            ( HostName )
+import Network           
 import Network.Socket     ( HostAddress )
 import ADNS.Base
 import ADNS.Endian
@@ -58,6 +58,20 @@ resolveA resolver x = do
   if rc /= sOK
      then return (Left rc)
      else return (Right [ addr | RRA (RRAddr addr) <- rs  ])
+
+-- |Resolve a hostname's 'SRV' records.
+
+resolveSRV :: Resolver -> HostName -> IO (Either Status [(HostName, PortID)])
+resolveSRV resolver x = do
+  Answer rc _ _ _ rs  <- resolver x SRV [] >>= takeMVar
+  if rc /= sOK
+     then return (Left rc)
+     else do
+       let cmp (RRSRV p1 _ _ _) (RRSRV p2 _ _ _) = compare p1 p2
+           cmp _ _ = error $ showString "unexpected record in SRV lookup: " (show rs)
+           rs' = sortBy cmp rs
+           as = [ (host, PortNumber $ toEnum port) | (RRSRV _ _ port host) <- rs' ]
+       return (Right as)
 
 -- |Get the 'PTR' records assigned to a host address. Note
 -- that although the API allows for a record to have more
