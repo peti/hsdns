@@ -1,4 +1,0 @@
-This package provides FFI bindings to the GNU ADNS library
-<http://www.gnu.org/software/adns/> as well as an appropriate
-high-level interface from the Haskell world. The code has been
-been tested with ADNS version 1.4.

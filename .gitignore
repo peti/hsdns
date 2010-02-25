@@ -1,14 +1,3 @@
-*.hi
-*.o
-/.installed-pkg-config
-/.setup-config
-/ADNS/Base.hs
-/COPYING
-/GNUmakefile
-/Setup
-/Setup.lhs
-/_darcs
-/dist/*
-/docs/*
-/hsdns-*.tar.gz
-/index.html
+# ignore cabal build files
+
+/dist
