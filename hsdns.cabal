@@ -1,9 +1,10 @@
 Name:                   hsdns
-Version:                1.4.2
+Version:                1.4.3
 Copyright:              (c) 2004-2010 Peter Simons
 License:                LGPL
 License-File:           COPYING.LESSER
-Author:                 Peter Simons <simons@cryp.to>, Lutz Donnerhacke <lutz@iks-jena.de>, Григорий Холомьёв <omever@gmail.com>
+Author:                 Peter Simons <simons@cryp.to>, Lutz Donnerhacke <lutz@iks-jena.de>,
+                        Григорий Холомьёв <omever@gmail.com>, Evan Rinehart <ebr@sciresearch.com>
 Maintainer:             Peter Simons <simons@cryp.to>
 Homepage:               http://gitorious.org/hsdns
 Category:               Foreign, Network
@@ -36,11 +37,6 @@ Tested-With:            GHC == 6.12.1
 Extra-Source-Files:     example/adns-reverse-lookup.hs
                         example/adns-srv-test.hs
                         example/adns-test-and-traverse.hs
-
-Source-Repository this
-  Tag:                  v1.4.2
-  Type:                 git
-  Location:             git://gitorious.org/hsdns/mainline.git
 
 Source-Repository head
   Type:                 git
