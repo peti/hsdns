@@ -268,13 +268,13 @@ instance Storable RRHostAddr where
   peek ptr    = do
     h <- #{peek adns_rr_hostaddr, host} ptr
     hstr <- assert (h /= nullPtr) (peekCString h)
-    st <- #{peek adns_rr_hostaddr, astatus} ptr
-    nadr <- #{peek adns_rr_hostaddr, naddrs} ptr :: IO #{type adns_status}
+    st <- #{peek adns_rr_hostaddr, astatus} ptr :: IO #{type adns_status}
+    nadr <- #{peek adns_rr_hostaddr, naddrs} ptr :: IO CInt
     aptr <- #{peek adns_rr_hostaddr, addrs} ptr
     adrs <- if (nadr > 0)
                 then peekArray (fromEnum nadr) aptr
                 else return []
-    return (RRHostAddr hstr (StatusCode st) adrs)
+    return (RRHostAddr hstr (StatusCode (fromEnum st)) adrs)
 
 -- |Original definition:
 --
@@ -363,7 +363,7 @@ instance Storable Answer where
   alignment _ = alignment (undefined :: CInt)
   poke _ _    = fail "poke is not defined for Network.DNS.ADNS.Answer"
   peek ptr    = do
-    sc <- #{peek adns_answer, status} ptr
+    sc <- #{peek adns_answer, status} ptr :: IO #{type adns_status}
     cn <- #{peek adns_answer, cname} ptr >>= maybePeek peekCString
     ow <- #{peek adns_answer, owner} ptr >>= maybePeek peekCString
     et <- #{peek adns_answer, expires} ptr
@@ -373,7 +373,7 @@ instance Storable Answer where
     rrsp <- #{peek adns_answer, rrs} ptr
     r <- peekResp rt rrsp (fromEnum sz) (fromEnum rs)
     return Answer
-        { status  = StatusCode sc
+        { status  = StatusCode (fromEnum sc)
         , cname   = cn
         , owner   = ow
         , expires = et
