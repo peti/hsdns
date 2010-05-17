@@ -25,11 +25,10 @@ Description:            This library provides an asynchronous DNS resolver on to
                         output is printed in the order in which the DNS responses
                         arrive:
                         .
-                        > $ ./adns-reverse-lookup xyz.example.org ecrc.de www.example.com www.cryp.to
-                        > OK: www.example.com <-> 208.77.188.166
-                        > ERR: xyz.example.org: cannot resolve A
-                        > FAIL: www.cryp.to -> 195.234.152.69 -> ["research.cryp.to"]
-                        > FAIL: ecrc.de -> 127.0.0.1 -> ["localhost"]
+                        > $ ./adns-reverse-lookup cryp.to localhost www.example.com
+                        > OK: localhost <-> 127.0.0.1
+                        > FAIL: cryp.to -> 217.19.183.102 -> ["zuse.cryp.to"]
+                        > OK: www.example.com <-> 192.0.32.10
 Cabal-Version:          >= 1.6
 Build-Type:             Simple
 Tested-With:            GHC == 6.12.1
