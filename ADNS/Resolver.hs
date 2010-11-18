@@ -120,7 +120,7 @@ resolveMX resolver x = do
 -- > queryA = query resolveA
 
 query :: (Resolver -> a -> IO (Either Status [b]))
-      -> (Resolver -> a -> IO (Maybe [b]))
+      -> Resolver -> a -> IO (Maybe [b])
 query f dns x = fmap toMaybe (f dns x)
   where
   toMaybe (Left rc)
