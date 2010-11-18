@@ -31,7 +31,7 @@ Description:            This library provides an asynchronous DNS resolver on to
                         > OK: www.example.com <-> 192.0.32.10
 Cabal-Version:          >= 1.6
 Build-Type:             Simple
-Tested-With:            GHC == 6.12.1
+Tested-With:            GHC == 6.12.3
 
 Extra-Source-Files:     example/adns-reverse-lookup.hs
                         example/adns-srv-test.hs
