@@ -28,7 +28,7 @@ import Control.Monad      ( when )
 import Data.List          ( sortBy )
 import Data.Map           ( Map )
 import qualified Data.Map as Map
-import Network           
+import Network
 import Network.Socket     ( HostAddress )
 import ADNS.Base
 import ADNS.Endian
