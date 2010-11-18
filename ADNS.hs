@@ -30,7 +30,7 @@ import ADNS.Resolver
 queryA :: Resolver -> HostName -> IO (Maybe [HostAddress])
 queryA = query resolveA
 
--- | For quering SRV records. Result is the list of tuples (host, port)
+-- | For quering SRV records. Result is the list of tuples (host, port).
 querySRV :: Resolver -> HostName -> IO (Maybe [(HostName, PortID)])
 querySRV = query resolveSRV
 
