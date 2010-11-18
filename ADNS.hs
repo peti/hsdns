@@ -39,9 +39,3 @@ queryPTR = query resolvePTR
 
 queryMX :: Resolver -> HostName -> IO (Maybe [(HostName, HostAddress)])
 queryMX = query resolveMX
-
--- ----- Configure Emacs -----
---
--- Local Variables: ***
--- haskell-program-name: "ghci -ladns" ***
--- End: ***

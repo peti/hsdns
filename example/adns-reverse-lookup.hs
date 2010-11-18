@@ -50,11 +50,3 @@ ptrCheck resolver chan host = do
                    | otherwise         -> writeChan chan (NotOK host addr names)
         _                              -> returnError "PTR"
     _           -> returnError "A"
-
-
-
--- ----- Configure Emacs -----
---
--- Local Variables: ***
--- haskell-program-name: "ghci -ladns" ***
--- End: ***

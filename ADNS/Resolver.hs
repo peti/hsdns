@@ -184,9 +184,3 @@ resolveLoop mst = do
                        putMVar mv a
                        return (RState dns (Map.delete q qs), True)
   when more (resolveLoop mst)
-
--- ----- Configure Emacs -----
---
--- Local Variables: ***
--- haskell-program-name: "ghci -ladns" ***
--- End: ***
