@@ -14,7 +14,6 @@ import Control.Concurrent       ( forkIO )
 import Control.Concurrent.Chan  ( Chan, newChan, writeChan, readChan )
 import System.Environment       ( getArgs )
 import Network.Socket           ( inet_ntoa )
-import Data.List                ( elem )
 import ADNS
 
 data CheckResult
@@ -35,7 +34,7 @@ main = do
   when (null names) (putStrLn "Usage: hostname [hostname ...]")
   initResolver [NoErrPrint, NoServerWarn] $ \resolver -> do
     rrChannel <- newChan :: IO (Chan CheckResult)
-    mapM_ (\h -> forkIO (ptrCheck resolver rrChannel h)) names
+    mapM_ (forkIO . ptrCheck resolver rrChannel) names
     replicateM_ (length names) (readChan rrChannel >>= printResult)
 
 ptrCheck :: Resolver -> Chan CheckResult -> HostName -> IO ()
