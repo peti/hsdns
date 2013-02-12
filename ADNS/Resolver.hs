@@ -55,9 +55,7 @@ initResolver flags f =
 resolveA :: Resolver -> HostName -> IO (Either Status [HostAddress])
 resolveA resolver x = do
   Answer rc _ _ _ rs  <- resolver x A [] >>= takeMVar
-  if rc /= sOK
-     then return (Left rc)
-     else return (Right [ addr | RRA (RRAddr addr) <- rs  ])
+  return (if rc /= sOK then Left rc else Right [addr | RRA (RRAddr addr) <- rs])
 
 -- |Resolve a hostname's 'SRV' records.
 
@@ -82,9 +80,7 @@ resolveSRV resolver x = do
 resolvePTR :: Resolver -> HostAddress -> IO (Either Status [HostName])
 resolvePTR resolver x = do
   Answer rc _ _ _ rs  <- resolver (toPTR x) PTR [] >>= takeMVar
-  if rc /= sOK
-     then return (Left rc)
-     else return (Right [ addr | RRPTR addr <- rs  ])
+  return (if rc /= sOK then Left rc else Right [ addr | RRPTR addr <- rs ])
 
 -- |Resolve the mail exchangers for a hostname. The returned
 -- list may contain more than one entry per hostname, in
