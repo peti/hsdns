@@ -13,6 +13,7 @@
 module ADNS.Endian ( Endian(..), endian, readWord32, readWord16 ) where
 
 import Foreign
+import System.IO.Unsafe
 
 -- |Signify the system's native byte order according to
 -- significance of bytes from low addresses to high addresses.
@@ -28,7 +29,7 @@ data Endian
 {-# NOINLINE endian #-}
 endian :: Endian
 endian =
-  unsafePerformIO $
+  System.IO.Unsafe.unsafePerformIO $
     allocaArray (sizeOf (undefined :: Word32)) $ \p -> do
       let val = 0x01020304 :: Word32
       poke p val
