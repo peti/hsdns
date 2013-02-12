@@ -6,7 +6,7 @@ License-File:           COPYING.LESSER
 Author:                 Peter Simons <simons@cryp.to>, Lutz Donnerhacke <lutz@iks-jena.de>,
                         Григорий Холомьёв <omever@gmail.com>, Evan Rinehart <ebr@sciresearch.com>
 Maintainer:             Peter Simons <simons@cryp.to>
-Homepage:               http://gitorious.org/hsdns
+Homepage:               http://github.com/peti/hsdns
 Category:               Foreign, Network
 Synopsis:               Asynchronous DNS Resolver
 Description:            This library provides an asynchronous DNS resolver on top
@@ -39,7 +39,7 @@ Extra-Source-Files:     example/adns-reverse-lookup.hs
 
 Source-Repository head
   Type:                 git
-  Location:             git://gitorious.org/hsdns/mainline.git
+  Location:             git://github.com/peti/hsdns.git
 
 Library
   Build-Depends:        base >= 3 && < 5, network, containers
