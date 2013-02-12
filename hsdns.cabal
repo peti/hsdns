@@ -1,12 +1,13 @@
 Name:                   hsdns
-Version:                1.5
-Copyright:              (c) 2004-2011 Peter Simons
+Version:                1.6
+Copyright:              Peter Simons
 License:                LGPL-3
 License-File:           COPYING.LESSER
 Author:                 Peter Simons <simons@cryp.to>, Lutz Donnerhacke <lutz@iks-jena.de>,
                         Григорий Холомьёв <omever@gmail.com>, Evan Rinehart <ebr@sciresearch.com>
 Maintainer:             Peter Simons <simons@cryp.to>
 Homepage:               http://github.com/peti/hsdns
+Bug-Reports:            http://github.com/peti/hsdns/issues
 Category:               Foreign, Network
 Synopsis:               Asynchronous DNS Resolver
 Description:            This library provides an asynchronous DNS resolver on top
