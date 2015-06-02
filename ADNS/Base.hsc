@@ -138,8 +138,8 @@ instance Enum RRType where
   toEnum #{const adns_r_ptr} = PTR
   toEnum #{const adns_r_srv} = SRV
   toEnum x = case x .&. #{const adns_rrt_typemask} of
-      	 47 -> NSEC
-	 i  -> RRType i
+         47 -> NSEC
+         i  -> RRType i
 
   fromEnum A   = #{const adns_r_a}
   fromEnum CNAME = #{const adns_r_cname}
@@ -148,9 +148,9 @@ instance Enum RRType where
   fromEnum PTR = #{const adns_r_ptr}
   fromEnum SRV = #{const adns_r_srv}
   fromEnum x = #{const adns_r_unknown} .|. case x of
-   	   NSEC       -> 47
-  	   (RRType i) -> i
-	   _	      -> error "Missing case in fromEnum ADNS.Base.RRType"
+           NSEC       -> 47
+           (RRType i) -> i
+           _          -> error "Missing case in fromEnum ADNS.Base.RRType"
 
 instance Storable RRType where
   sizeOf _     = #{size adns_rrtype}
@@ -405,7 +405,7 @@ peekResp rt ptr off n = do
   parseByType CNAME = peek (castPtr ptr) >>= peekCString >>= return . RRCNAME
   parseByType NSEC = do RRByteblock len rptr <- peek (castPtr ptr)
                         (name, _) <- peekFQDNAndAdvance rptr len
-  	      	     	return $ RRNSEC name
+                        return $ RRNSEC name
   parseByType (RRType _) = do RRByteblock len rptr <- peek (castPtr ptr)
                               str <- peekCStringLen (rptr, len)
                               return $ RRUNKNOWN str
@@ -421,8 +421,8 @@ peekFQDNAndAdvance ptr _ = do
   case fromEnum cc of
     c | c == 0 -> return ("", ptr1)
       | c < 64 -> do name <- peekCStringLen (castPtr ptr1, c)
-    	       	     (zone, ptr2) <- peekFQDNAndAdvance (ptr1 `plusPtr` c) 0
-		     return (name ++ "." ++ zone, ptr2)
+                     (zone, ptr2) <- peekFQDNAndAdvance (ptr1 `plusPtr` c) 0
+                     return (name ++ "." ++ zone, ptr2)
       | otherwise -> error "Compressed FQDN must not occur here."
 
 
