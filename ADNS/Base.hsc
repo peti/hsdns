@@ -632,10 +632,3 @@ wrapAdns m acc  = alloca $ \resP -> do
 
 mkFlags :: Enum a => [a] -> CInt
 mkFlags = toEnum . sum . map fromEnum
-
-
--- ----- Configure Emacs -----
---
--- Local Variables: ***
--- haskell-program-name: "ghci -ladns" ***
--- End: ***
