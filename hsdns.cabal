@@ -30,17 +30,17 @@ Description:            This library provides an asynchronous DNS resolver on to
                         > OK: localhost <-> 127.0.0.1
                         > FAIL: cryp.to -> 217.19.183.102 -> ["zuse.cryp.to"]
                         > OK: www.example.com <-> 192.0.32.10
-Cabal-Version:          >= 1.6
+Cabal-Version:          >= 1.8
 Build-Type:             Simple
 Tested-With:            GHC > 7 && < 8.1
-
-Extra-Source-Files:     example/adns-reverse-lookup.hs
-                        example/adns-srv-test.hs
-                        example/adns-test-and-traverse.hs
 
 Source-Repository head
   Type:                 git
   Location:             git://github.com/peti/hsdns.git
+
+Flag install-examples
+  Description:   Build and install example programs.
+  Default:       False
 
 Library
   Build-Depends:        base >= 3 && < 5, network >= 2.6.3.0, containers
@@ -51,3 +51,33 @@ Library
                         ADNS.Base,
                         ADNS.Resolver
   Ghc-Options:          -Wall
+
+executable adns-reverse-lookup
+  main-is:              adns-reverse-lookup.hs
+  hs-source-dirs:       example
+  ghc-options:          -Wall -threaded
+  build-depends:        base, network, hsdns
+  if flag(install-examples)
+    buildable:          True
+  else
+    buildable:          False
+
+executable adns-srv-test
+  main-is:              adns-srv-test.hs
+  hs-source-dirs:       example
+  ghc-options:          -Wall -threaded
+  build-depends:        base, network, hsdns
+  if flag(install-examples)
+    buildable:          True
+  else
+    buildable:          False
+
+executable adns-test-and-traverse
+  main-is:              adns-test-and-traverse.hs
+  hs-source-dirs:       example
+  ghc-options:          -Wall -threaded
+  build-depends:        base, hsdns
+  if flag(install-examples)
+    buildable:          True
+  else
+    buildable:          False

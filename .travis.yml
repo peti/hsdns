@@ -117,6 +117,9 @@ install:
  - echo "extra-include-dirs:" "$HOME/.local/include" >>${HOME}/.cabal/config
  - echo "extra-lib-dirs:" "$HOME/.local/lib" >>${HOME}/.cabal/config
 
+# enable building the example programs
+ - echo "constraint:" "hsdns +install-examples" >>${HOME}/.cabal/config
+
 # Here starts the actual work to be performed for the package under test;
 # any command which exits with a non-zero exit code causes the build to fail.
 script:
