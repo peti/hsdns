@@ -18,8 +18,8 @@ main = do
   initResolver [Debug] $ \resolver -> do
     a <- querySRV resolver (head names)
     case a of
-	Just addr -> putStrLn $ "RESULT:\n" ++ concatMap (\b -> fst b ++ ":" ++ showPortID (snd b)) addr
-	_         -> fail $ "Error in SRV " ++ show (head names)
+        Just addr -> putStrLn $ "RESULT:\n" ++ concatMap (\b -> fst b ++ ":" ++ showPortID (snd b)) addr
+        _         -> fail $ "Error in SRV " ++ show (head names)
 
 showPortID :: PortID -> String
 showPortID (PortNumber p) = show p
