@@ -29,9 +29,8 @@ import Data.List          ( sortBy )
 import Data.Map           ( Map )
 import qualified Data.Map as Map
 import Network
-import Network.Socket     ( HostAddress )
+import Network.Socket     ( HostAddress, hostAddressToTuple )
 import ADNS.Base
-import ADNS.Endian
 
 -- |A 'Resolver' is an 'IO' computation which -- given the name
 -- and type of the record to query -- returns an 'MVar' that will
@@ -141,7 +140,7 @@ toPTR ha = shows b4 . ('.':) .
            shows b2 . ('.':) .
            shows b1 $ ".in-addr.arpa."
   where
-    (b1,b2,b3,b4) = readWord32 ha
+    (b1,b2,b3,b4) = hostAddressToTuple ha
 
 -- * Implementation
 

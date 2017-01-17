@@ -21,10 +21,9 @@ module ADNS.Base where
 
 import Control.Exception        ( assert, bracket )
 import Network                  ( HostName )
-import Network.Socket           ( HostAddress )
+import Network.Socket           ( HostAddress, hostAddressToTuple )
 import Foreign
 import Foreign.C
-import ADNS.Endian
 
 #include <adns.h>
 #include <errno.h>
@@ -226,7 +225,7 @@ instance Show RRAddr where
                      shows b3 . ('.':) .
                      shows b4 $ ""
     where
-    (b1,b2,b3,b4) = readWord32 ha
+    (b1,b2,b3,b4) = hostAddressToTuple ha
 
 instance Storable RRAddr where
   sizeOf _    = #{size adns_rr_addr}
