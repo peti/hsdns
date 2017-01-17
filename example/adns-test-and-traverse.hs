@@ -9,7 +9,7 @@ main :: IO ()
 main = initResolver [NoErrPrint, NoServerWarn] $ \resolver -> do
   args <- getArgs
   case args of
-    [name]   -> traverse resolver name
+    [name]   -> traverseDNSSEC resolver name
     [t,name] -> work resolver (read t) name
     _ -> putStrLn "Usage: t [typeid] fqdn"
 
@@ -33,12 +33,13 @@ work resolver t n = do
 -- by providing the next entry after the subzone.
 --
 -- You may try this mechanism on "dnssec.iks-jena.de"
-traverse :: Resolver -> String -> IO ()
-traverse resolver x = do
+
+traverseDNSSEC :: Resolver -> String -> IO ()
+traverseDNSSEC resolver x = do
   putStrLn x
   answer <- takeMVar =<< resolver x NSEC [QuoteOk_Query]
   case rrs answer of
-     [RRNSEC y] | not (x `endsWith` ('.':y)) -> traverse resolver y
+     [RRNSEC y] | not (x `endsWith` ('.':y)) -> traverseDNSSEC resolver y
      _  -> return ()
 
 endsWith :: String -> String -> Bool
