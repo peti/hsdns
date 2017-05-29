@@ -51,6 +51,7 @@ Library
                         ADNS.Base,
                         ADNS.Resolver
   Ghc-Options:          -Wall
+  build-tools:          hsc2hs
 
 executable adns-reverse-lookup
   main-is:              adns-reverse-lookup.hs
