@@ -57,9 +57,9 @@ executable adns-reverse-lookup
   main-is:              adns-reverse-lookup.hs
   hs-source-dirs:       example
   ghc-options:          -Wall -threaded
-  build-depends:        base, network, hsdns
   if flag(install-examples)
     buildable:          True
+    build-depends:      base, network, hsdns
   else
     buildable:          False
 
@@ -67,9 +67,9 @@ executable adns-srv-test
   main-is:              adns-srv-test.hs
   hs-source-dirs:       example
   ghc-options:          -Wall -threaded
-  build-depends:        base, network, hsdns
   if flag(install-examples)
     buildable:          True
+    build-depends:      base, network, hsdns
   else
     buildable:          False
 
@@ -77,8 +77,8 @@ executable adns-test-and-traverse
   main-is:              adns-test-and-traverse.hs
   hs-source-dirs:       example
   ghc-options:          -Wall -threaded
-  build-depends:        base, hsdns
   if flag(install-examples)
     buildable:          True
+    build-depends:      base, hsdns
   else
     buildable:          False
