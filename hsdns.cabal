@@ -1,5 +1,5 @@
 Name:                   hsdns
-Version:                1.7.1
+Version:                1.8
 Copyright:              Peter Simons
 License:                LGPL-3
 License-File:           COPYING.LESSER
@@ -33,7 +33,7 @@ Description:            This library provides an asynchronous DNS resolver on to
 Cabal-Version:          >= 1.8
 Build-Type:             Simple
 tested-with:            GHC == 7.0.4, GHC == 7.4.2, GHC == 7.6.3, GHC == 7.8.4, GHC == 7.10.3
-                      , GHC == 8.0.2, GHC == 8.2.2, GHC == 8.4.1
+                      , GHC == 8.0.2, GHC == 8.2.2, GHC == 8.4.4, GHC == 8.6.3
 
 Source-Repository head
   Type:                 git
