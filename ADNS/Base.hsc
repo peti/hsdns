@@ -342,7 +342,7 @@ data Answer = Answer
   , expires :: CTime
       -- ^ Only defined if status is 'sOK', 'sNXDOMAIN', or 'sNODATA'.
   , rrs     :: [Response]
-      -- ^ The list will be empty if an error occured.
+      -- ^ The list will be empty if an error occurred.
   }
   deriving (Show)
 
@@ -612,7 +612,7 @@ foreign import ccall unsafe adns_errtypeabbrev :: CInt -> IO CString
 
 -- * Helper Functions
 
--- |Internel helper function to handle result passing from
+-- |Internal helper function to handle result passing from
 -- ADNS via @Ptr (Ptr a)@, and to generate human-readable IO
 -- exceptions in case of an error.
 
