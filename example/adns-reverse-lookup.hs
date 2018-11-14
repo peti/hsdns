@@ -13,7 +13,7 @@ import Control.Monad            ( when, replicateM_ )
 import Control.Concurrent       ( forkIO )
 import Control.Concurrent.Chan  ( Chan, newChan, writeChan, readChan )
 import System.Environment       ( getArgs )
-import Network.Socket           ( inet_ntoa )
+import Network.Socket           ( getNameInfo, NameInfoFlag(..), SockAddr(..) )
 import ADNS
 
 data CheckResult
@@ -22,9 +22,9 @@ data CheckResult
   | DNSError String
 
 printResult :: CheckResult -> IO ()
-printResult (OK h a)       = do addr <- inet_ntoa a
+printResult (OK h a)       = do addr <- ntoa a
                                 putStrLn $ "OK: "   ++ h ++ " <-> " ++ addr
-printResult (NotOK h a h') = do addr <- inet_ntoa a
+printResult (NotOK h a h') = do addr <- ntoa a
                                 putStrLn $ "FAIL: " ++ h ++ " -> "  ++ addr ++ " -> " ++ show h'
 printResult (DNSError msg) = putStrLn $ "ERR: " ++ msg
 
@@ -47,5 +47,11 @@ ptrCheck resolver chan host = do
       case ptr of
         Just names | host `elem` names -> writeChan chan (OK host addr)
                    | otherwise         -> writeChan chan (NotOK host addr names)
-        _                              -> returnError "PTR"
+        _                              -> ntoa addr >>= \str -> returnError ("PTR for "++str)
     _           -> returnError "A"
+
+ntoa :: HostAddress -> IO String
+ntoa ha = do r <- getNameInfo [NI_NUMERICHOST] True False (SockAddrInet 0 ha)
+             case r of
+               (Just hname, _) -> return hname
+               _               -> fail ("getNameInfo: unexpected failure printing address "++show ha)

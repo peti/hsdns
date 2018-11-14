@@ -28,8 +28,7 @@ import Control.Monad      ( when )
 import Data.List          ( sortBy )
 import Data.Map           ( Map )
 import qualified Data.Map as Map
-import Network
-import Network.Socket     ( HostAddress, hostAddressToTuple )
+import Network.Socket     ( HostName, HostAddress, PortNumber, hostAddressToTuple )
 import ADNS.Base
 
 -- |A 'Resolver' is an 'IO' computation which -- given the name
@@ -58,7 +57,7 @@ resolveA resolver x = do
 
 -- |Resolve a hostname's 'SRV' records.
 
-resolveSRV :: Resolver -> HostName -> IO (Either Status [(HostName, PortID)])
+resolveSRV :: Resolver -> HostName -> IO (Either Status [(HostName, PortNumber)])
 resolveSRV resolver x = do
   Answer rc _ _ _ rs  <- resolver x SRV [] >>= takeMVar
   if rc /= sOK
@@ -67,7 +66,7 @@ resolveSRV resolver x = do
        let cmp (RRSRV p1 _ _ _) (RRSRV p2 _ _ _) = compare p1 p2
            cmp _ _ = error $ showString "unexpected record in SRV lookup: " (show rs)
            rs' = sortBy cmp rs
-           as = [ (host, PortNumber $ toEnum port) | (RRSRV _ _ port host) <- rs' ]
+           as = [ (host, toEnum port) | (RRSRV _ _ port host) <- rs' ]
        return (Right as)
 
 -- |Get the 'PTR' records assigned to a host address. Note

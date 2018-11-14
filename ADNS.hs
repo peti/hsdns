@@ -22,8 +22,7 @@ module ADNS
   )
   where
 
-import Network           ( HostName, PortID )
-import Network.Socket    ( HostAddress )
+import Network.Socket    ( HostName, HostAddress, PortNumber )
 import ADNS.Base
 import ADNS.Resolver
 
@@ -31,7 +30,7 @@ queryA :: Resolver -> HostName -> IO (Maybe [HostAddress])
 queryA = query resolveA
 
 -- | For querying SRV records. Result is the list of tuples (host, port).
-querySRV :: Resolver -> HostName -> IO (Maybe [(HostName, PortID)])
+querySRV :: Resolver -> HostName -> IO (Maybe [(HostName, PortNumber)])
 querySRV = query resolveSRV
 
 queryPTR :: Resolver -> HostAddress -> IO (Maybe [HostName])

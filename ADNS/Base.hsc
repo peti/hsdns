@@ -20,8 +20,7 @@
 module ADNS.Base where
 
 import Control.Exception        ( assert, bracket )
-import Network                  ( HostName )
-import Network.Socket           ( HostAddress, hostAddressToTuple )
+import Network.Socket           ( HostName, HostAddress, hostAddressToTuple )
 import Foreign
 import Foreign.C
 
