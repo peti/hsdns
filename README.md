@@ -20,7 +20,7 @@ used. Given a list of host names on the command line, it performs an A/PTR
 double-lookup and checks whether the records are consistent. The output is
 printed in the order in which the DNS responses arrive:
 
-> $ ./adns-reverse-lookup cryp.to localhost www.example.com
-> OK: localhost <-> 127.0.0.1
-> FAIL: cryp.to -> 217.19.183.102 -> ["zuse.cryp.to"]
-> OK: www.example.com <-> 192.0.32.10
+    $ ./adns-reverse-lookup cryp.to localhost www.example.com
+    OK: localhost <-> 127.0.0.1
+    FAIL: cryp.to -> 217.19.183.102 -> ["zuse.cryp.to"]
+    OK: www.example.com <-> 192.0.32.10
