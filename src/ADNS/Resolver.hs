@@ -24,7 +24,7 @@ module ADNS.Resolver
 
 import Control.Concurrent ( forkIO )
 import Control.Concurrent.MVar
-import Control.Monad      ( when )
+import Control.Monad      ( when, void )
 import Data.List          ( sortBy )
 import Data.Map           ( Map )
 import qualified Data.Map as Map
@@ -161,8 +161,8 @@ resolve :: MVar ResolverState -> Resolver
 resolve mst r rt qfs = modifyMVar mst $ \st -> do
   res <- newEmptyMVar
   q <- adnsSubmit (adns st) r rt qfs
-  when (Map.null (queries st))
-    (forkIO (resolveLoop mst) >> return ())
+  when (Map.null (queries st)) $
+    void (forkIO (resolveLoop mst))
   let st' = st { queries = Map.insert q res (queries st) }
   return (st', res)
 
