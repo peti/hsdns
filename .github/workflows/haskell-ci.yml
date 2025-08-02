@@ -257,7 +257,7 @@ jobs:
       - name: doctest
         run: |
           cd ${PKGDIR_hsdns} || false
-          doctest  .
+          doctest  src
       - name: cabal check
         run: |
           cd ${PKGDIR_hsdns} || false
