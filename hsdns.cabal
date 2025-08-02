@@ -50,6 +50,7 @@ Library
   Extensions:           ForeignFunctionInterface, EmptyDataDecls
   Extra-Libraries:      adns
   Includes:             "adns.h" "errno.h"
+  hs-source-dirs:       src
   Exposed-Modules:      ADNS,
                         ADNS.Base,
                         ADNS.Resolver
